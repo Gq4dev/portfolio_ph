@@ -46,6 +46,7 @@ jobs:
           build-args: |
             PUBLIC_SANITY_PROJECT_ID=${{ env.PUBLIC_SANITY_PROJECT_ID }}
             PUBLIC_SANITY_DATASET=${{ env.PUBLIC_SANITY_DATASET }}
+            CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

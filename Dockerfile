@@ -17,8 +17,14 @@ COPY package.json package-lock.json ./
 COPY patches ./patches
 RUN npm ci
 
-# Build the static site (this also emits the embedded /admin Studio bundle)
+# Build the static site (this also emits the embedded /admin Studio bundle).
+# CACHEBUST forces `npm run build` to re-run on every CI build so it always
+# picks up fresh Sanity content. Docker caches this layer by file contents,
+# but the CMS data lives remotely and changes without any file changing —
+# so without this, a rebuild would silently reuse stale content. Deps above
+# (npm ci) stay cached; only the Astro build re-executes.
 COPY . .
+ARG CACHEBUST=unset
 RUN npm run build
 
 # --- Serve stage: tiny Nginx serving the static output ---
