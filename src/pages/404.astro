@@ -1,0 +1,53 @@
+---
+import Layout from '../layouts/Layout.astro'
+---
+
+<Layout title="Página no encontrada — Jesica Mariana">
+  <section class="nf wrap">
+    <p class="eyebrow" data-reveal>Error 404</p>
+    <h1 class="nf__title" data-reveal style="--reveal-delay:0.1s">
+      Esta toma<br /><span class="nf__accent">no existe</span>
+    </h1>
+    <p class="nf__text" data-reveal style="--reveal-delay:0.2s">
+      La página que buscás se movió o nunca estuvo acá.
+    </p>
+    <a class="nf__link" href="/" data-reveal style="--reveal-delay:0.28s"
+      >← Volver al inicio</a
+    >
+  </section>
+</Layout>
+
+<style>
+  .nf {
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: clamp(3rem, 8vw, 6rem);
+  }
+  .nf__title {
+    font-size: var(--step-6);
+    line-height: 0.95;
+    margin: 0.4em 0 0.5em;
+  }
+  .nf__accent {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+    margin-left: clamp(0.5rem, 5vw, 3rem);
+  }
+  .nf__text {
+    color: var(--text-dim);
+    font-size: var(--step-1);
+  }
+  .nf__link {
+    margin-top: 2rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .nf__link:hover {
+    color: var(--accent-bright);
+  }
+</style>

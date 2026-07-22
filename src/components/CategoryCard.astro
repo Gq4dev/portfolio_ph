@@ -1,0 +1,133 @@
+---
+import OptimizedImage from './OptimizedImage.astro'
+import type { CategorySummary } from '../lib/queries'
+
+interface Props {
+  category: CategorySummary
+  index: number
+}
+
+const { category, index } = Astro.props
+const num = String(index + 1).padStart(2, '0')
+const label =
+  category.photoCount === 1 ? '1 foto' : `${category.photoCount} fotos`
+---
+
+<a
+  class="card"
+  href={`/${category.slug}`}
+  data-reveal
+  style={`--reveal-delay:${index * 0.09}s`}
+  aria-label={`${category.title} — ${label}`}
+>
+  <div class="card__frame">
+    {
+      category.cover ? (
+        <OptimizedImage
+          image={category.cover}
+          alt={category.cover.alt ?? category.title}
+          sizes="(max-width: 720px) 92vw, (max-width: 1100px) 60vw, 640px"
+          class="card__img"
+        />
+      ) : (
+        <div class="card__empty" aria-hidden="true" />
+      )
+    }
+    <span class="card__num">{num}</span>
+  </div>
+
+  <div class="card__meta">
+    <h3 class="card__title">{category.title}</h3>
+    <span class="card__count">{label}</span>
+    <span class="card__go" aria-hidden="true">Ver serie →</span>
+  </div>
+</a>
+
+<style>
+  .card {
+    display: block;
+    color: inherit;
+  }
+  .card__frame {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  /* Signature detail: contact-sheet numbering in the accent. */
+  .card__num {
+    position: absolute;
+    top: 0.9rem;
+    left: 1rem;
+    z-index: 2;
+    font-family: var(--font-body);
+    font-size: var(--step--1);
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    mix-blend-mode: screen;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+  }
+  .card__empty {
+    aspect-ratio: 3 / 2;
+    background: repeating-linear-gradient(
+      45deg,
+      var(--surface),
+      var(--surface) 12px,
+      var(--surface-2) 12px,
+      var(--surface-2) 24px
+    );
+  }
+
+  .card :global(.card__img) {
+    aspect-ratio: 4 / 5;
+    transition: transform 0.9s var(--ease-out), filter 0.6s var(--ease);
+    filter: saturate(0.92);
+  }
+  .card:hover :global(.card__img),
+  .card:focus-visible :global(.card__img) {
+    transform: scale(1.045);
+    filter: saturate(1.05);
+  }
+
+  .card__meta {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 0.4rem 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    margin-top: 0.9rem;
+  }
+  .card__title {
+    font-size: var(--step-3);
+    grid-row: 1;
+    transition: color 0.3s var(--ease);
+  }
+  .card:hover .card__title {
+    color: var(--accent-bright);
+  }
+  .card__count {
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    font-size: var(--step--1);
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .card__go {
+    grid-column: 1 / -1;
+    font-size: var(--step--1);
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 0.4s var(--ease), transform 0.4s var(--ease),
+      color 0.3s var(--ease);
+  }
+  .card:hover .card__go,
+  .card:focus-visible .card__go {
+    opacity: 1;
+    transform: none;
+    color: var(--accent);
+  }
+</style>

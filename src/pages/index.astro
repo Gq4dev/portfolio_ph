@@ -1,0 +1,241 @@
+---
+import Layout from '../layouts/Layout.astro'
+import OptimizedImage from '../components/OptimizedImage.astro'
+import CategoryCard from '../components/CategoryCard.astro'
+import { getSiteSettings, getCategories } from '../lib/queries'
+
+const [settings, categories] = await Promise.all([
+  getSiteSettings(),
+  getCategories(),
+])
+
+// Hero image (LCP): featured[0] → else first category cover/photo.
+const heroImage = settings.featured[0] ?? categories[0]?.cover ?? null
+const heroAlt =
+  settings.featured[0]?.alt ??
+  categories[0]?.cover?.alt ??
+  settings.title
+
+const [firstName, ...rest] = settings.title.split(' ')
+const lastName = rest.join(' ')
+---
+
+<Layout title={`${settings.title} — ${settings.tagline}`}>
+  <section class="hero wrap" aria-labelledby="hero-name">
+    <div class="hero__lead">
+      <p class="eyebrow" data-reveal style="--reveal-delay:0.05s">
+        {settings.tagline} · Portfolio
+      </p>
+      <h1 class="hero__name" id="hero-name">
+        <span class="hero__line" data-reveal style="--reveal-delay:0.12s"
+          >{firstName}</span
+        >
+        {
+          lastName && (
+            <span
+              class="hero__line hero__line--accent"
+              data-reveal
+              style="--reveal-delay:0.22s"
+            >
+              {lastName}
+            </span>
+          )
+        }
+      </h1>
+      <p class="hero__intro" data-reveal style="--reveal-delay:0.34s">
+        {
+          settings.shortBio ||
+            'Fotografía que persigue la luz honesta — retratos, paisaje y la vida silvestre que aparece cuando una se queda quieta.'
+        }
+      </p>
+      <a
+        class="hero__cue"
+        href="#series"
+        data-reveal
+        style="--reveal-delay:0.44s"
+      >
+        <span>Ver las series</span>
+        <span class="hero__cue-line" aria-hidden="true"></span>
+      </a>
+    </div>
+
+    {
+      heroImage && (
+        <div class="hero__media" data-reveal style="--reveal-delay:0.18s">
+          <OptimizedImage
+            image={heroImage}
+            alt={heroAlt}
+            sizes="(max-width: 900px) 90vw, 46vw"
+            widths={[600, 900, 1200, 1600, 2000]}
+            eager={true}
+            class="hero__img"
+          />
+          <span class="hero__tag" aria-hidden="true">01 — Naturaleza</span>
+        </div>
+      )
+    }
+  </section>
+
+  <section class="series wrap" id="series" aria-labelledby="series-title">
+    <header class="series__head">
+      <h2 class="series__title" id="series-title" data-reveal>Series</h2>
+      <p class="series__meta" data-reveal style="--reveal-delay:0.08s">
+        {categories.length} {categories.length === 1 ? 'colección' : 'colecciones'}
+      </p>
+    </header>
+
+    {
+      categories.length === 0 ? (
+        <p class="series__empty" data-reveal>
+          Las series se publicarán pronto.
+        </p>
+      ) : (
+        <div class="series__grid">
+          {categories.map((category, i) => (
+            <CategoryCard category={category} index={i} />
+          ))}
+        </div>
+      )
+    }
+  </section>
+</Layout>
+
+<style>
+  /* ---------------- Hero: asymmetric, off-grid ---------------- */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(2rem, 5vw, 3rem);
+    align-items: end;
+    padding-top: clamp(2.5rem, 7vw, 6rem);
+    padding-bottom: clamp(3rem, 8vw, 7rem);
+  }
+  @media (min-width: 900px) {
+    .hero {
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: clamp(2rem, 4vw, 4rem);
+    }
+  }
+
+  .hero__name {
+    font-size: var(--step-7);
+    /* Playfair's thinnest weight is 400 and its metrics run taller with
+       higher stroke contrast than Fraunces — give the stacked name a hair
+       more line-height and relax the negative tracking so it sits well. */
+    font-weight: 400;
+    line-height: 0.94;
+    letter-spacing: -0.015em;
+    margin: 0.4em 0 0.35em;
+  }
+  .hero__line {
+    display: block;
+  }
+  /* Off-grid nudge on the second line — editorial asymmetry. */
+  .hero__line--accent {
+    margin-left: clamp(0.5rem, 6vw, 3.5rem);
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+  }
+  .hero__intro {
+    max-width: 40ch;
+    font-size: var(--step-1);
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .hero__cue {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: clamp(1.5rem, 4vw, 2.5rem);
+    font-size: var(--step--1);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .hero__cue-line {
+    display: block;
+    width: clamp(2.5rem, 8vw, 5rem);
+    height: 1px;
+    background: var(--accent);
+    transform-origin: left;
+    transition: transform 0.4s var(--ease);
+  }
+  .hero__cue:hover .hero__cue-line {
+    transform: scaleX(1.5);
+  }
+
+  .hero__media {
+    position: relative;
+    align-self: stretch;
+  }
+  .hero :global(.hero__img) {
+    aspect-ratio: 4 / 5;
+    height: 100%;
+  }
+  @media (min-width: 900px) {
+    .hero__media {
+      /* pull the image up so it overlaps the name's baseline band */
+      margin-top: clamp(-6rem, -4vw, -1rem);
+    }
+    .hero :global(.hero__img) {
+      aspect-ratio: 3 / 4;
+    }
+  }
+  .hero__tag {
+    position: absolute;
+    bottom: -0.4rem;
+    right: 0.6rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    background: var(--bg);
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--line);
+  }
+
+  /* ---------------- Series ---------------- */
+  .series {
+    padding-top: clamp(2rem, 5vw, 4rem);
+  }
+  .series__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: clamp(2rem, 4vw, 3.5rem);
+  }
+  .series__title {
+    font-size: var(--step-4);
+  }
+  .series__meta {
+    font-size: var(--step--1);
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .series__empty {
+    color: var(--text-dim);
+    font-size: var(--step-1);
+  }
+
+  .series__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(2.5rem, 5vw, 4rem);
+  }
+  @media (min-width: 720px) {
+    .series__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  /* Editorial rhythm: first card leads wider when many exist. */
+  @media (min-width: 1100px) {
+    .series__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

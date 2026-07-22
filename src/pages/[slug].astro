@@ -1,0 +1,84 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Gallery from '../components/Gallery.astro'
+import { getCategories, getCategory } from '../lib/queries'
+import type { GetStaticPaths } from 'astro'
+
+export const getStaticPaths = (async () => {
+  const categories = await getCategories()
+  return categories.map((c) => ({ params: { slug: c.slug } }))
+}) satisfies GetStaticPaths
+
+const { slug } = Astro.params
+const category = await getCategory(slug!)
+
+if (!category) {
+  return Astro.redirect('/404')
+}
+
+const count = category.photos.length
+const label = count === 1 ? '1 fotografía' : `${count} fotografías`
+---
+
+<Layout title={`${category.title} — Jesica Mariana`}>
+  <section class="cat-head wrap" aria-labelledby="cat-title">
+    <a class="cat-back" href="/" data-reveal>
+      <span aria-hidden="true">←</span> Series
+    </a>
+    <h1 class="cat-title" id="cat-title" data-reveal style="--reveal-delay:0.08s">
+      {category.title}
+    </h1>
+    <p class="cat-meta" data-reveal style="--reveal-delay:0.16s">
+      <span class="cat-meta__num">01</span>
+      <span class="rule cat-meta__rule"></span>
+      <span>{label}</span>
+    </p>
+  </section>
+
+  <Gallery photos={category.photos} title={category.title} />
+</Layout>
+
+<style>
+  .cat-head {
+    padding-top: clamp(2rem, 5vw, 4.5rem);
+    padding-bottom: clamp(2rem, 5vw, 4rem);
+  }
+  .cat-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    transition: color 0.3s var(--ease);
+  }
+  .cat-back:hover {
+    color: var(--accent);
+  }
+  .cat-title {
+    font-size: var(--step-6);
+    font-weight: 340;
+    margin: clamp(1rem, 3vw, 2rem) 0 clamp(1rem, 2vw, 1.5rem);
+    line-height: 0.95;
+  }
+  .cat-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .cat-meta__num {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .cat-meta__rule {
+    display: block;
+    width: clamp(2rem, 10vw, 6rem);
+    height: 1px;
+    background: var(--line);
+  }
+</style>

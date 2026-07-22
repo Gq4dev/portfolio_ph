@@ -1,0 +1,13 @@
+diff --git a/node_modules/@sanity/astro/dist/sanity-astro.mjs b/node_modules/@sanity/astro/dist/sanity-astro.mjs
+index 1354eb0..88a10be 100644
+--- a/node_modules/@sanity/astro/dist/sanity-astro.mjs
++++ b/node_modules/@sanity/astro/dist/sanity-astro.mjs
+@@ -1471,7 +1471,7 @@ function Ir(u, s) {
+ }
+ function Sr(u, s) {
+   try {
+-    return Ar(Br.join(u, "package.json")).resolve(`${s}/package.json`).replace(/\/package\.json$/, "");
++    return Ar(Br.join(u, "package.json")).resolve(`${s}/package.json`).replace(/[\\/]package\.json$/, "");
+   } catch {
+     return;
+   }

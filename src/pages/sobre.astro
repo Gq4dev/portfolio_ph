@@ -1,0 +1,103 @@
+---
+import Layout from '../layouts/Layout.astro'
+import OptimizedImage from '../components/OptimizedImage.astro'
+import { getAbout, getSiteSettings } from '../lib/queries'
+
+const [about, settings] = await Promise.all([getAbout(), getSiteSettings()])
+
+const heading = about?.title || `Sobre ${settings.title}`
+
+// Minimal Portable Text → plain paragraphs (block type only).
+function blocksToParagraphs(blocks: unknown[] | undefined): string[] {
+  if (!Array.isArray(blocks)) return []
+  return blocks
+    .filter((b: any) => b?._type === 'block' && Array.isArray(b.children))
+    .map((b: any) =>
+      b.children.map((c: any) => c?.text ?? '').join('').trim()
+    )
+    .filter(Boolean)
+}
+
+const paragraphs = blocksToParagraphs(about?.bio)
+const fallback = [
+  settings.shortBio ||
+    'Fotógrafa de naturaleza y retrato. Trabajo con luz natural y tiempos largos: espero a que la escena se revele en lugar de forzarla.',
+  'Esta sección todavía no fue completada en el panel de contenido. Cuando la fotógrafa cargue su biografía, aparecerá aquí.',
+]
+const body = paragraphs.length ? paragraphs : fallback
+---
+
+<Layout title={`${heading} — ${settings.title}`}>
+  <section class="about wrap">
+    <div class="about__text">
+      <p class="eyebrow" data-reveal>Sobre</p>
+      <h1 class="about__title" data-reveal style="--reveal-delay:0.1s">
+        {heading}
+      </h1>
+      <div class="about__body">
+        {
+          body.map((p, i) => (
+            <p data-reveal style={`--reveal-delay:${0.18 + i * 0.06}s`}>
+              {p}
+            </p>
+          ))
+        }
+      </div>
+      <a class="about__link" href="/contacto" data-reveal>Contacto →</a>
+    </div>
+
+    {
+      about?.portrait && (
+        <div class="about__portrait" data-reveal style="--reveal-delay:0.15s">
+          <OptimizedImage
+            image={about.portrait}
+            alt={about.portrait.alt ?? settings.title}
+            sizes="(max-width: 900px) 90vw, 40vw"
+            class="about__img"
+          />
+        </div>
+      )
+    }
+  </section>
+</Layout>
+
+<style>
+  .about {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    padding-top: clamp(2.5rem, 6vw, 5rem);
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .about {
+      grid-template-columns: 1.2fr 0.8fr;
+    }
+  }
+  .about__title {
+    font-size: var(--step-5);
+    margin: 0.4em 0 0.6em;
+  }
+  .about__body {
+    display: grid;
+    gap: 1.2rem;
+    max-width: 52ch;
+    color: var(--text-dim);
+    font-size: var(--step-0);
+    line-height: 1.7;
+  }
+  .about__link {
+    display: inline-block;
+    margin-top: clamp(1.5rem, 4vw, 2.5rem);
+    font-size: var(--step--1);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .about__link:hover {
+    color: var(--accent-bright);
+  }
+  .about :global(.about__img) {
+    aspect-ratio: 4 / 5;
+  }
+</style>

@@ -1,0 +1,117 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { getSiteSettings } from '../lib/queries'
+
+const settings = await getSiteSettings()
+
+const wa = settings.whatsapp?.replace(/[^\d]/g, '')
+const links = [
+  settings.email && { label: 'Email', value: settings.email, href: `mailto:${settings.email}` },
+  wa && { label: 'WhatsApp', value: settings.whatsapp, href: `https://wa.me/${wa}` },
+  settings.instagram && {
+    label: 'Instagram',
+    value: `@${settings.instagram.replace('@', '')}`,
+    href: `https://instagram.com/${settings.instagram.replace('@', '')}`,
+  },
+].filter(Boolean) as { label: string; value: string; href: string }[]
+---
+
+<Layout title={`Contacto — ${settings.title}`}>
+  <section class="contact wrap">
+    <p class="eyebrow" data-reveal>Contacto</p>
+    <h1 class="contact__title" data-reveal style="--reveal-delay:0.1s">
+      Trabajemos<br /><span class="contact__accent">juntas</span>
+    </h1>
+    <p class="contact__intro" data-reveal style="--reveal-delay:0.2s">
+      {settings.tagline} · {settings.title}. Para encargos, colaboraciones o
+      simplemente saludar.
+    </p>
+
+    {
+      links.length ? (
+        <ul class="contact__list">
+          {links.map((l, i) => (
+            <li data-reveal style={`--reveal-delay:${0.28 + i * 0.08}s`}>
+              <a class="contact__link" href={l.href} rel="noopener" target="_blank">
+                <span class="contact__label">{l.label}</span>
+                <span class="contact__value">{l.value}</span>
+                <span class="contact__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="contact__empty" data-reveal style="--reveal-delay:0.28s">
+          Los datos de contacto todavía no fueron cargados en el panel de
+          contenido.
+        </p>
+      )
+    }
+  </section>
+</Layout>
+
+<style>
+  .contact {
+    padding-top: clamp(3rem, 8vw, 7rem);
+    padding-bottom: clamp(2rem, 6vw, 5rem);
+  }
+  .contact__title {
+    font-size: var(--step-6);
+    line-height: 0.95;
+    margin: 0.4em 0 0.5em;
+  }
+  .contact__accent {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+    margin-left: clamp(0.5rem, 5vw, 3rem);
+  }
+  .contact__intro {
+    max-width: 46ch;
+    font-size: var(--step-1);
+    color: var(--text-dim);
+  }
+  .contact__empty {
+    margin-top: 2rem;
+    color: var(--text-dim);
+  }
+
+  .contact__list {
+    margin-top: clamp(2.5rem, 6vw, 4.5rem);
+    border-top: 1px solid var(--line);
+  }
+  .contact__link {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: baseline;
+    gap: 1rem;
+    padding: clamp(1.1rem, 3vw, 1.8rem) 0;
+    border-bottom: 1px solid var(--line);
+    transition: padding-left 0.35s var(--ease), color 0.3s var(--ease);
+  }
+  .contact__link:hover,
+  .contact__link:focus-visible {
+    padding-left: clamp(0.5rem, 2vw, 1.5rem);
+    color: var(--accent-bright);
+  }
+  .contact__label {
+    font-size: var(--step--1);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .contact__link:hover .contact__label {
+    color: var(--accent);
+  }
+  .contact__value {
+    font-family: var(--font-display);
+    font-size: var(--step-3);
+  }
+  .contact__arrow {
+    font-size: var(--step-2);
+    transition: transform 0.35s var(--ease);
+  }
+  .contact__link:hover .contact__arrow {
+    transform: translateX(0.4rem);
+  }
+</style>

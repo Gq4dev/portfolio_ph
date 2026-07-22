@@ -1,0 +1,106 @@
+---
+import { urlFor } from '../lib/image'
+import type { SanityImage } from '../lib/queries'
+
+interface Props {
+  image: SanityImage
+  alt?: string
+  sizes: string
+  widths?: number[]
+  /** LCP image → eager + high priority. Everything else lazy. */
+  eager?: boolean
+  class?: string
+  /** Rounded/framed variants can override the ratio; defaults to intrinsic. */
+  ratio?: number
+}
+
+const {
+  image,
+  alt,
+  sizes,
+  widths = [400, 800, 1200, 1600, 2000],
+  eager = false,
+  class: className,
+  ratio,
+} = Astro.props
+
+const dims = image.metadata?.dimensions
+const width = dims?.width
+const height = dims?.height
+const aspectRatio =
+  ratio ?? (dims ? dims.width / dims.height : 3 / 2)
+const lqip = image.metadata?.lqip
+
+// auto('format') negotiates AVIF/WebP; quality 80 is the sweet spot.
+const build = (w: number) =>
+  urlFor(image).width(w).auto('format').quality(80).url()
+
+const srcset = widths.map((w) => `${build(w)} ${w}w`).join(', ')
+const src = build(1200)
+const altText = alt ?? image.alt ?? ''
+---
+
+<figure
+  class:list={['oi', className]}
+  style={`--oi-ratio:${aspectRatio};${lqip ? `background-image:url(${lqip});` : ''}`}
+>
+  <img
+    class="oi__img"
+    src={src}
+    srcset={srcset}
+    sizes={sizes}
+    width={width}
+    height={height}
+    alt={altText}
+    loading={eager ? 'eager' : 'lazy'}
+    fetchpriority={eager ? 'high' : 'auto'}
+    decoding={eager ? 'auto' : 'async'}
+    onload="this.classList.add('is-loaded')"
+  />
+</figure>
+
+<noscript>
+  <style>.oi__img { opacity: 1 !important; }</style>
+</noscript>
+
+<style>
+  .oi {
+    position: relative;
+    margin: 0;
+    overflow: hidden;
+    aspect-ratio: var(--oi-ratio);
+    background-size: cover;
+    background-position: center;
+    background-color: var(--surface);
+  }
+  .oi__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.7s var(--ease-out);
+  }
+  .oi__img.is-loaded {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .oi__img {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Blur-up: mark already-cached images loaded after view transitions too.
+  function settleImages() {
+    document
+      .querySelectorAll<HTMLImageElement>('.oi__img')
+      .forEach((img) => {
+        if (img.complete && img.naturalWidth > 0) {
+          img.classList.add('is-loaded')
+        }
+      })
+  }
+  settleImages()
+  document.addEventListener('astro:page-load', settleImages)
+</script>
