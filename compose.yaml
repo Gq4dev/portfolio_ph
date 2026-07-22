@@ -1,0 +1,18 @@
+services:
+  portfolio:
+    image: ghcr.io/gq4dev/portfolio_ph:latest
+    restart: unless-stopped
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      - traefik.http.routers.portfolio.rule=Host(`jesica.178.104.93.97.nip.io`)
+      - traefik.http.routers.portfolio.entrypoints=websecure
+      - traefik.http.routers.portfolio.tls=true
+      - traefik.http.routers.portfolio.tls.certresolver=letsencrypt
+      - traefik.http.services.portfolio.loadbalancer.server.port=80
+
+networks:
+  web:
+    external: true
