@@ -1,0 +1,67 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [main]
+  # Sanity webhook fires this when the photographer publishes content
+  repository_dispatch:
+    types: [sanity-publish]
+  # Manual "Run workflow" button
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/gq4dev/portfolio_ph
+  # Public Sanity config, inlined into the static build (not secrets)
+  PUBLIC_SANITY_PROJECT_ID: f24czf8c
+  PUBLIC_SANITY_DATASET: production
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          build-args: |
+            PUBLIC_SANITY_PROJECT_ID=${{ env.PUBLIC_SANITY_PROJECT_ID }}
+            PUBLIC_SANITY_DATASET=${{ env.PUBLIC_SANITY_DATASET }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Portainer redeploy
+        env:
+          WEBHOOK: ${{ secrets.PORTAINER_WEBHOOK_URL }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "PORTAINER_WEBHOOK_URL secret not set yet - skipping redeploy."
+            echo "Create the Portainer stack webhook and add the secret to enable auto-deploy."
+            exit 0
+          fi
+          echo "Triggering Portainer redeploy..."
+          curl -fsSL -X POST "$WEBHOOK"
+          echo "Redeploy triggered."
