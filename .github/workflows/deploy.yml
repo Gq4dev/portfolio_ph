@@ -9,6 +9,14 @@ on:
   # Manual "Run workflow" button
   workflow_dispatch:
 
+# A single publish in Sanity can emit two mutations (create + update),
+# firing two dispatches. Collapse them: only the latest run survives, and
+# an in-flight one is cancelled. Each build is a full CMS snapshot, so the
+# winner always has the freshest content — no change is lost.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   IMAGE: ghcr.io/gq4dev/portfolio_ph
   # Public Sanity config, inlined into the static build (not secrets)
