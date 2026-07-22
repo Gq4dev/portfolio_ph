@@ -130,9 +130,9 @@ const DEFAULT_SETTINGS: SiteSettings = {
   title: 'Jesica Mariana',
   tagline: 'Fotografía',
   shortBio: '',
-  email: '',
+  email: 'jesicacomas90@gmail.com',
   whatsapp: '',
-  instagram: '',
+  instagram: '@jesicamariana.ph',
   featured: [],
 }
 

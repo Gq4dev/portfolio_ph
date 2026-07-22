@@ -8,7 +8,6 @@ interface Props {
 }
 
 const { category, index } = Astro.props
-const num = String(index + 1).padStart(2, '0')
 const label =
   category.photoCount === 1 ? '1 foto' : `${category.photoCount} fotos`
 ---
@@ -33,7 +32,6 @@ const label =
         <div class="card__empty" aria-hidden="true" />
       )
     }
-    <span class="card__num">{num}</span>
   </div>
 
   <div class="card__meta">
@@ -52,20 +50,6 @@ const label =
     position: relative;
     overflow: hidden;
     background: var(--surface);
-  }
-  /* Signature detail: contact-sheet numbering in the accent. */
-  .card__num {
-    position: absolute;
-    top: 0.9rem;
-    left: 1rem;
-    z-index: 2;
-    font-family: var(--font-body);
-    font-size: var(--step--1);
-    font-weight: 500;
-    letter-spacing: 0.16em;
-    color: var(--accent);
-    mix-blend-mode: screen;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
   }
   .card__empty {
     aspect-ratio: 3 / 2;

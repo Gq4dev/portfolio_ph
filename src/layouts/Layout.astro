@@ -44,11 +44,38 @@ const metaDescription =
       <nav aria-label="Navegación principal">
         <ul class="nav__links">
           {
-            categories.slice(0, 2).map((c) => (
-              <li>
-                <a href={`/${c.slug}`}>{c.title}</a>
+            categories.length > 0 && (
+              <li class="nav__dropdown">
+                <button
+                  class="nav__trigger"
+                  type="button"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  aria-controls="nav-galerias"
+                >
+                  Galerías
+                  <svg
+                    class="nav__caret"
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                <ul class="nav__menu" id="nav-galerias" hidden>
+                  {categories.map((c) => (
+                    <li>
+                      <a href={`/${c.slug}`}>{c.title}</a>
+                    </li>
+                  ))}
+                </ul>
               </li>
-            ))
+            )
           }
           <li><a href="/sobre">Sobre</a></li>
           <li><a href="/contacto">Contacto</a></li>
@@ -151,6 +178,95 @@ const metaDescription =
         transform: scaleX(1);
       }
 
+      /* ---- Galerías dropdown ---- */
+      .nav__dropdown {
+        position: relative;
+      }
+      .nav__trigger {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.2rem 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.02em;
+        color: var(--text-dim);
+        transition: color 0.3s var(--ease);
+      }
+      .nav__trigger::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 1px;
+        background: var(--accent);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.35s var(--ease);
+      }
+      .nav__trigger:hover,
+      .nav__trigger:focus-visible,
+      .nav__trigger[aria-expanded='true'] {
+        color: var(--text);
+      }
+      .nav__trigger:hover::after,
+      .nav__trigger:focus-visible::after,
+      .nav__trigger[aria-expanded='true']::after {
+        transform: scaleX(1);
+      }
+      .nav__caret {
+        transition: transform 0.3s var(--ease);
+      }
+      .nav__trigger[aria-expanded='true'] .nav__caret {
+        transform: rotate(180deg);
+      }
+
+      .nav__menu {
+        position: absolute;
+        top: calc(100% + 0.9rem);
+        left: 0;
+        z-index: 120;
+        display: grid;
+        gap: 0.15rem;
+        min-width: max(11rem, 100%);
+        max-width: min(72vw, 18rem);
+        padding: 0.5rem;
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        backdrop-filter: blur(14px);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+      }
+      .nav__menu[hidden] {
+        display: none;
+      }
+      .nav__menu li {
+        margin: 0;
+      }
+      .nav__menu a {
+        display: block;
+        padding: 0.55rem 0.7rem;
+        font-size: var(--step--1);
+        letter-spacing: 0.02em;
+        color: var(--text-dim);
+        border-radius: var(--radius);
+        transition: color 0.25s var(--ease), background 0.25s var(--ease);
+      }
+      .nav__menu a:hover,
+      .nav__menu a:focus-visible {
+        color: var(--text);
+        background: color-mix(in srgb, var(--accent) 16%, transparent);
+        outline: none;
+      }
+      /* Anchor the panel to the right edge on small screens so it never clips. */
+      @media (max-width: 520px) {
+        .nav__menu {
+          left: auto;
+          right: 0;
+        }
+      }
+
       .footer {
         margin-top: clamp(4rem, 10vw, 9rem);
         padding-bottom: 2.5rem;
@@ -211,6 +327,86 @@ const metaDescription =
 
       initReveals()
       document.addEventListener('astro:page-load', initReveals)
+
+      // Accessible "Galerías" dropdown. The <header> uses transition:persist,
+      // so the nav DOM survives View Transitions — we bind listeners once
+      // (guarded by data-nav-ready) and only reset the open/closed state on
+      // each astro:page-load.
+      function initNavDropdown() {
+        const dd = document.querySelector<HTMLElement>('.nav__dropdown')
+        if (!dd) return
+        const trigger = dd.querySelector<HTMLButtonElement>('.nav__trigger')
+        const menu = dd.querySelector<HTMLElement>('.nav__menu')
+        if (!trigger || !menu) return
+
+        const isOpen = () => trigger.getAttribute('aria-expanded') === 'true'
+        const open = () => {
+          trigger.setAttribute('aria-expanded', 'true')
+          menu.hidden = false
+        }
+        const close = (focusTrigger: boolean) => {
+          trigger.setAttribute('aria-expanded', 'false')
+          menu.hidden = true
+          if (focusTrigger) trigger.focus()
+        }
+        const links = () => Array.from(menu.querySelectorAll<HTMLAnchorElement>('a'))
+
+        // Always start closed after (re)init / navigation.
+        close(false)
+
+        // Bind interaction handlers only once for the persisted nav.
+        if (dd.dataset.navReady === 'true') return
+        dd.dataset.navReady = 'true'
+
+        // Click / Enter / Space (native on <button>) toggles.
+        trigger.addEventListener('click', () => {
+          isOpen() ? close(false) : open()
+        })
+
+        trigger.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            if (!isOpen()) open()
+            links()[0]?.focus()
+          } else if (e.key === 'Escape') {
+            if (isOpen()) close(true)
+          }
+        })
+
+        menu.addEventListener('keydown', (e) => {
+          const list = links()
+          const i = list.indexOf(document.activeElement as HTMLAnchorElement)
+          if (e.key === 'Escape') {
+            e.preventDefault()
+            close(true)
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            list[Math.min(i + 1, list.length - 1)]?.focus()
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            if (i <= 0) close(true)
+            else list[i - 1]?.focus()
+          } else if (e.key === 'Home') {
+            e.preventDefault()
+            list[0]?.focus()
+          } else if (e.key === 'End') {
+            e.preventDefault()
+            list[list.length - 1]?.focus()
+          }
+        })
+
+        // Close on outside click.
+        document.addEventListener('click', (e) => {
+          if (isOpen() && !dd.contains(e.target as Node)) close(false)
+        })
+        // Close when focus leaves the dropdown entirely (Tab out).
+        dd.addEventListener('focusout', (e) => {
+          if (!dd.contains(e.relatedTarget as Node)) close(false)
+        })
+      }
+
+      initNavDropdown()
+      document.addEventListener('astro:page-load', initNavDropdown)
     </script>
   </body>
 </html>
