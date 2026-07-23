@@ -4,6 +4,10 @@ import { getSiteSettings } from '../lib/queries'
 
 const settings = await getSiteSettings()
 
+// Web3Forms access key (public by design). Set PUBLIC_WEB3FORMS_KEY in the
+// build env to enable the contact form; without it, only the direct links show.
+const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY || ''
+
 const wa = settings.whatsapp?.replace(/[^\d]/g, '')
 const links = [
   settings.email && { label: 'Email', value: settings.email, href: `mailto:${settings.email}` },
@@ -38,6 +42,52 @@ const links = [
         simplemente saludar.
       </span>
     </p>
+
+    {
+      web3formsKey && (
+        <form class="cform" data-reveal style="--reveal-delay:0.24s" data-contact-form>
+          <input type="hidden" name="access_key" value={web3formsKey} />
+          <input
+            type="hidden"
+            name="subject"
+            value={`Portfolio — nuevo mensaje (${settings.title})`}
+          />
+          {/* Honeypot: real users never see/check this. */}
+          <input
+            type="checkbox"
+            name="botcheck"
+            class="cform__bot"
+            tabindex="-1"
+            autocomplete="off"
+          />
+          <div class="cform__grid">
+            <label class="cform__field">
+              <span class="cform__label">
+                <span data-lang-block="en">Name</span
+                ><span data-lang-block="es">Nombre</span>
+              </span>
+              <input type="text" name="name" required autocomplete="name" />
+            </label>
+            <label class="cform__field">
+              <span class="cform__label">Email</span>
+              <input type="email" name="email" required autocomplete="email" />
+            </label>
+          </div>
+          <label class="cform__field">
+            <span class="cform__label">
+              <span data-lang-block="en">Message</span
+              ><span data-lang-block="es">Mensaje</span>
+            </span>
+            <textarea name="message" rows="5" required></textarea>
+          </label>
+          <button type="submit" class="cform__submit">
+            <span data-lang-block="en">Send message</span
+            ><span data-lang-block="es">Enviar mensaje</span>
+          </button>
+          <p class="cform__status" data-form-status role="status" aria-live="polite" />
+        </form>
+      )
+    }
 
     {
       links.length ? (
@@ -154,4 +204,136 @@ const links = [
   .contact__link:hover .contact__arrow {
     transform: translateX(0.4rem);
   }
+
+  /* ---- Contact form ---- */
+  .cform {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+    display: grid;
+    gap: 1.1rem;
+    max-width: 42rem;
+  }
+  .cform__bot {
+    position: absolute;
+    left: -9999px;
+    opacity: 0;
+  }
+  .cform__grid {
+    display: grid;
+    gap: 1.1rem;
+  }
+  @media (min-width: 620px) {
+    .cform__grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .cform__field {
+    display: grid;
+    gap: 0.45rem;
+  }
+  .cform__label {
+    font-size: var(--step--1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .cform input,
+  .cform textarea {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    font: inherit;
+    color: var(--text);
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    transition: border-color 0.25s var(--ease), background 0.25s var(--ease);
+  }
+  .cform input:focus,
+  .cform textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
+  }
+  .cform textarea {
+    resize: vertical;
+    min-height: 7rem;
+  }
+  .cform__submit {
+    justify-self: start;
+    margin-top: 0.3rem;
+    padding: 0.8rem 1.6rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.08em;
+    color: var(--bg);
+    background: var(--accent);
+    border-radius: var(--radius);
+    transition: background 0.25s var(--ease), transform 0.25s var(--ease);
+  }
+  .cform__submit:hover:not(:disabled) {
+    background: var(--accent-bright);
+  }
+  .cform__submit:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+  .cform__status {
+    min-height: 1.2em;
+    font-size: var(--step--1);
+    color: var(--text-dim);
+  }
+  .cform__status.is-ok {
+    color: var(--accent);
+  }
+  .cform__status.is-err {
+    color: #d9534f;
+  }
 </style>
+
+<script>
+  // Submit the contact form via Web3Forms AJAX (no page reload). Status text
+  // follows the active language. Bound once; re-init on View Transitions.
+  function initContactForm() {
+    const form = document.querySelector<HTMLFormElement>('[data-contact-form]')
+    if (!form || form.dataset.ready === 'true') return
+    form.dataset.ready = 'true'
+    const status = form.querySelector<HTMLElement>('[data-form-status]')
+    const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]')
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      if (!status || !btn) return
+      const es = document.documentElement.getAttribute('data-lang') === 'es'
+      btn.disabled = true
+      status.className = 'cform__status'
+      status.textContent = es ? 'Enviando…' : 'Sending…'
+      try {
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(Object.fromEntries(new FormData(form) as any)),
+        })
+        const data = await res.json()
+        if (data.success) {
+          status.textContent = es
+            ? '¡Gracias! Tu mensaje fue enviado.'
+            : 'Thanks! Your message was sent.'
+          status.classList.add('is-ok')
+          form.reset()
+        } else {
+          throw new Error(data.message || 'error')
+        }
+      } catch (err) {
+        status.textContent = es
+          ? 'Ups, algo falló. Probá de nuevo o escribime por mail.'
+          : 'Something went wrong — try again, or email me.'
+        status.classList.add('is-err')
+      } finally {
+        btn.disabled = false
+      }
+    })
+  }
+  initContactForm()
+  document.addEventListener('astro:page-load', initContactForm)
+</script>

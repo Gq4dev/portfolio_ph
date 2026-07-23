@@ -60,6 +60,11 @@ const jsonLd = {
 }
 // Escape "<" so a stray "</script>" in CMS text can't break out of the tag.
 const jsonLdStr = JSON.stringify(jsonLd).replace(/</g, '\\u003c')
+
+// Umami analytics — self-hosted. Set both PUBLIC_UMAMI_SRC and PUBLIC_UMAMI_ID
+// in the build env once the Umami instance is up; until then, nothing loads.
+const umamiSrc = import.meta.env.PUBLIC_UMAMI_SRC || ''
+const umamiId = import.meta.env.PUBLIC_UMAMI_ID || ''
 ---
 
 <!doctype html>
@@ -109,6 +114,12 @@ const jsonLdStr = JSON.stringify(jsonLd).replace(/</g, '\\u003c')
     {ogImage && <meta name="twitter:image" content={ogImage} />}
 
     <script type="application/ld+json" set:html={jsonLdStr} is:inline />
+
+    {
+      umamiSrc && umamiId && (
+        <script defer src={umamiSrc} data-website-id={umamiId} is:inline />
+      )
+    }
 
     <ClientRouter />
   </head>

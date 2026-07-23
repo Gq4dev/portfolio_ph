@@ -1,0 +1,58 @@
+# Umami — self-hosted, privacy-first analytics.
+# Deploy as a SEPARATE Portainer stack on the Hetzner box.
+#
+# 1. Set two env vars in the Portainer stack (Environment variables):
+#      UMAMI_DB_PASSWORD  → any strong password
+#      UMAMI_APP_SECRET   → any long random string (e.g. `openssl rand -hex 32`)
+# 2. Deploy. Umami comes up at https://analytics.178.104.93.97.nip.io
+# 3. Log in with the default admin / umami, then CHANGE that password.
+# 4. Add a website ("Jesica portfolio"), copy its Website ID + the tracking
+#    <script> src, and hand them over — they get wired into the site build via
+#    PUBLIC_UMAMI_SRC and PUBLIC_UMAMI_ID.
+services:
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    networks:
+      - web
+      - umami-internal
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      - traefik.http.routers.umami.rule=Host(`analytics.178.104.93.97.nip.io`)
+      - traefik.http.routers.umami.entrypoints=websecure
+      - traefik.http.routers.umami.tls=true
+      - traefik.http.routers.umami.tls.certresolver=letsencrypt
+      - traefik.http.services.umami.loadbalancer.server.port=3000
+
+  umami-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD}
+    volumes:
+      - umami-db-data:/var/lib/postgresql/data
+    networks:
+      - umami-internal
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U umami -d umami']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  umami-db-data:
+
+networks:
+  web:
+    external: true
+  umami-internal:
