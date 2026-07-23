@@ -6,7 +6,7 @@ import sitemap from '@astrojs/sitemap';
 
 // Production origin — used for canonical URLs and Open Graph absolute links.
 // Override with SITE_URL when a custom domain is set up.
-const site = process.env.SITE_URL || 'https://jesica.178.104.93.97.nip.io';
+const site = process.env.SITE_URL || 'https://jesicamarianaph.com';
 
 // https://astro.build/config
 export default defineConfig({

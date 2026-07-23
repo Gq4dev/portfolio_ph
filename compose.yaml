@@ -7,11 +7,21 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=web
-      - traefik.http.routers.portfolio.rule=Host(`jesica.178.104.93.97.nip.io`)
+      # Serve the apex domain; keep the old nip.io host alive during the switch.
+      - traefik.http.routers.portfolio.rule=Host(`jesicamarianaph.com`) || Host(`jesica.178.104.93.97.nip.io`)
       - traefik.http.routers.portfolio.entrypoints=websecure
       - traefik.http.routers.portfolio.tls=true
       - traefik.http.routers.portfolio.tls.certresolver=letsencrypt
       - traefik.http.services.portfolio.loadbalancer.server.port=80
+      # Redirect www → apex (301) so there is a single canonical host.
+      - traefik.http.routers.portfolio-www.rule=Host(`www.jesicamarianaph.com`)
+      - traefik.http.routers.portfolio-www.entrypoints=websecure
+      - traefik.http.routers.portfolio-www.tls=true
+      - traefik.http.routers.portfolio-www.tls.certresolver=letsencrypt
+      - traefik.http.routers.portfolio-www.middlewares=redirect-apex
+      - traefik.http.middlewares.redirect-apex.redirectregex.regex=^https://www\.jesicamarianaph\.com/(.*)
+      - traefik.http.middlewares.redirect-apex.redirectregex.replacement=https://jesicamarianaph.com/$${1}
+      - traefik.http.middlewares.redirect-apex.redirectregex.permanent=true
 
 networks:
   web:
