@@ -64,6 +64,13 @@ export default defineType({
               title: 'Epígrafe',
               type: 'string',
             }),
+            defineField({
+              name: 'captureInfo',
+              title: 'Info de captura',
+              description:
+                'Cámara, lente y ajustes — ej. "Canon R6 · 85mm · f/1.8 · ISO 400". Opcional.',
+              type: 'string',
+            }),
           ],
         }),
       ],

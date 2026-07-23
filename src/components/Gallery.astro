@@ -18,6 +18,7 @@ const items = photos.map((photo, i) => ({
   full: urlFor(photo).width(2000).auto('format').quality(85).url(),
   alt: photo.alt ?? title,
   caption: photo.caption ?? '',
+  capture: photo.captureInfo ?? '',
 }))
 ---
 
@@ -38,6 +39,7 @@ const items = photos.map((photo, i) => ({
           data-full={it.full}
           data-alt={it.alt}
           data-caption={it.caption}
+          data-capture={it.capture}
           data-reveal
           style={`--reveal-delay:${(it.index % 3) * 0.08}s`}
           aria-label={`Ampliar foto ${it.num}: ${it.alt}`}
@@ -76,6 +78,7 @@ const items = photos.map((photo, i) => ({
     <img class="lightbox__img" id="lightbox-img" src="" alt="" />
     <figcaption class="lightbox__caption">
       <span id="lightbox-text"></span>
+      <span class="lightbox__meta" id="lightbox-meta" hidden></span>
     </figcaption>
   </figure>
   <button class="lightbox__nav lightbox__nav--next" type="button" data-lightbox-next aria-label="Foto siguiente">
@@ -215,6 +218,14 @@ const items = photos.map((photo, i) => ({
     font-size: var(--step--1);
     color: color-mix(in srgb, var(--lb-fg) 65%, transparent);
   }
+  .lightbox__meta {
+    font-size: var(--step--2);
+    letter-spacing: 0.05em;
+    color: color-mix(in srgb, var(--lb-fg) 45%, transparent);
+  }
+  .lightbox__meta[hidden] {
+    display: none;
+  }
   .lightbox__close {
     position: absolute;
     top: clamp(0.75rem, 3vw, 2rem);
@@ -278,6 +289,7 @@ const items = photos.map((photo, i) => ({
     full: string
     alt: string
     caption: string
+    capture: string
     num: string
     trigger: HTMLElement
   }
@@ -288,6 +300,7 @@ const items = photos.map((photo, i) => ({
 
     const img = document.getElementById('lightbox-img') as HTMLImageElement | null
     const textEl = document.getElementById('lightbox-text')
+    const metaEl = document.getElementById('lightbox-meta')
     if (!img || !textEl) return
 
     const triggers = Array.from(
@@ -298,6 +311,7 @@ const items = photos.map((photo, i) => ({
       full: t.dataset.full || '',
       alt: t.dataset.alt || '',
       caption: t.dataset.caption || '',
+      capture: t.dataset.capture || '',
       num: String(Number(t.dataset.index) + 1).padStart(2, '0'),
       trigger: t,
     }))
@@ -311,6 +325,10 @@ const items = photos.map((photo, i) => ({
       img.src = s.full
       img.alt = s.alt
       textEl.textContent = s.caption || s.alt
+      if (metaEl) {
+        metaEl.textContent = s.capture
+        metaEl.hidden = !s.capture
+      }
     }
 
     const open = (index: number) => {

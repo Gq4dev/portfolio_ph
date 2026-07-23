@@ -15,6 +15,7 @@ export interface SanityImage {
   asset?: { _ref: string; _type?: string }
   alt?: string
   caption?: string | null
+  captureInfo?: string | null
   metadata?: {
     lqip?: string
     dimensions?: ImageDimensions
