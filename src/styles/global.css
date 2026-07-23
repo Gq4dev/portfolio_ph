@@ -43,6 +43,22 @@
   --dur: 0.7s;
 }
 
+/* Light theme — warm bone "paper" with a deeper terracotta so photos still
+   pop. Dark is the default (:root above); this only overrides the palette
+   when the visitor opts into light via the theme toggle (data-theme is set
+   by an anti-flash inline script in the <head>, so there is no color flash). */
+html[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f0e8;            /* warm paper */
+  --surface: #ebe5d9;       /* lifted card surface */
+  --surface-2: #e2dbcc;     /* hover fill */
+  --line: #d9cfbe;          /* warm hairline */
+  --text: #26231e;          /* near-black, warm */
+  --text-dim: #6f685d;      /* muted warm gray */
+  --accent: #b0532e;        /* deeper terracotta for contrast on light */
+  --accent-bright: #c4633d;
+}
+
 /* ---------- reset ---------- */
 *,
 *::before,
