@@ -133,7 +133,7 @@ const ogImage = ogSource
           </li>
           <li class="nav__lang">
             <button class="lang" type="button" data-lang-toggle aria-label="Cambiar a español">
-              <span class="lang__flag" data-lang-block="en" aria-hidden="true">
+              <span class="lang__flag" data-lang-opt="en" aria-hidden="true">
                 <svg viewBox="0 0 60 40" width="22" height="15">
                   <clipPath id="flag-gb"><rect width="60" height="40" rx="4" /></clipPath>
                   <g clip-path="url(#flag-gb)">
@@ -145,7 +145,7 @@ const ogImage = ogSource
                   </g>
                 </svg>
               </span>
-              <span class="lang__flag" data-lang-block="es" aria-hidden="true">
+              <span class="lang__flag" data-lang-opt="es" aria-hidden="true">
                 <svg viewBox="0 0 60 40" width="22" height="15">
                   <clipPath id="flag-ar"><rect width="60" height="40" rx="4" /></clipPath>
                   <g clip-path="url(#flag-ar)">
@@ -156,8 +156,8 @@ const ogImage = ogSource
                   </g>
                 </svg>
               </span>
-              <span class="lang__code" data-lang-block="en">EN</span
-              ><span class="lang__code" data-lang-block="es">ES</span>
+              <span class="lang__code" data-lang-opt="en">EN</span
+              ><span class="lang__code" data-lang-opt="es">ES</span>
             </button>
           </li>
         </ul>
@@ -490,6 +490,12 @@ const ogImage = ogSource
       }
 
       /* ---- Language toggle ---- */
+      /* The button shows the TARGET language (the one you switch to), not the
+         current one — hide the option that matches the active language. */
+      :global(html[data-lang='en']) .lang [data-lang-opt='en'],
+      :global(html[data-lang='es']) .lang [data-lang-opt='es'] {
+        display: none;
+      }
       .nav__lang {
         display: inline-flex;
       }
