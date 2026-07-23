@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+
+Sitemap: https://jesica.178.104.93.97.nip.io/sitemap-index.xml

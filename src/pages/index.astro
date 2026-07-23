@@ -4,6 +4,7 @@ import OptimizedImage from '../components/OptimizedImage.astro'
 import CategoryCard from '../components/CategoryCard.astro'
 import { getSiteSettings, getCategories } from '../lib/queries'
 import { collectionCount } from '../lib/i18n'
+import { urlFor } from '../lib/image'
 
 const [settings, categories] = await Promise.all([
   getSiteSettings(),
@@ -37,11 +38,25 @@ const heroAlt =
   categories[0]?.cover?.alt ??
   settings.title
 
+// Shared hero image config — used by both the preload link and OptimizedImage
+// so the preloaded URL matches what the <img> requests (same cache entry).
+const HERO_SIZES = '(max-width: 900px) 90vw, 46vw'
+const HERO_WIDTHS = [600, 900, 1200, 1600, 2000]
+const heroSrcset = heroImage
+  ? HERO_WIDTHS.map(
+      (w) => `${urlFor(heroImage).width(w).auto('format').quality(80).url()} ${w}w`
+    ).join(', ')
+  : undefined
+
 const [firstName, ...rest] = settings.title.split(' ')
 const lastName = rest.join(' ')
 ---
 
-<Layout title={`${settings.title} — ${settings.tagline}`}>
+<Layout
+  title={`${settings.title} — ${settings.tagline}`}
+  preloadSrcset={heroSrcset}
+  preloadSizes={HERO_SIZES}
+>
   <section class="hero wrap" aria-labelledby="hero-name">
     <div class="hero__lead">
       <p class="eyebrow" data-reveal style="--reveal-delay:0.05s">
@@ -88,8 +103,8 @@ const lastName = rest.join(' ')
           <OptimizedImage
             image={heroImage}
             alt={heroAlt}
-            sizes="(max-width: 900px) 90vw, 46vw"
-            widths={[600, 900, 1200, 1600, 2000]}
+            sizes={HERO_SIZES}
+            widths={HERO_WIDTHS}
             eager={true}
             class="hero__img"
           />

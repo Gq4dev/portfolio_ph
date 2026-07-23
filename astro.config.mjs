@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import sanity from '@sanity/astro';
+import sitemap from '@astrojs/sitemap';
 
 // Production origin — used for canonical URLs and Open Graph absolute links.
 // Override with SITE_URL when a custom domain is set up.
@@ -27,5 +28,9 @@ export default defineConfig({
       studioBasePath: '/admin',
     }),
     react(),
+    // Generates sitemap-index.xml at build; excludes the embedded Studio.
+    sitemap({
+      filter: (page) => !page.includes('/admin'),
+    }),
   ],
 });

@@ -11,9 +11,12 @@ import { urlFor } from '../lib/image'
 interface Props {
   title: string
   description?: string
+  /** LCP image to preload (responsive). Pass the hero's srcset + sizes. */
+  preloadSrcset?: string
+  preloadSizes?: string
 }
 
-const { title, description } = Astro.props
+const { title, description, preloadSrcset, preloadSizes } = Astro.props
 
 const [settings, categories] = await Promise.all([
   getSiteSettings(),
@@ -36,6 +39,27 @@ const ogSource =
 const ogImage = ogSource
   ? urlFor(ogSource).width(1200).height(630).fit('crop').auto('format').url()
   : null
+
+// Structured data: identifies the site owner as a photographer and links her
+// Instagram as an official profile (sameAs) for search engines / knowledge graph.
+const sameAs: string[] = []
+if (settings.instagram) {
+  sameAs.push(`https://instagram.com/${settings.instagram.replace('@', '')}`)
+}
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: settings.title,
+  jobTitle: 'Photographer',
+  description:
+    settings.shortBioEn || settings.shortBio || `${settings.title} — ${settings.tagline}`,
+  url: Astro.site ? Astro.site.href : canonical,
+  ...(sameAs.length ? { sameAs } : {}),
+  ...(settings.email ? { email: `mailto:${settings.email}` } : {}),
+  ...(ogImage ? { image: ogImage } : {}),
+}
+// Escape "<" so a stray "</script>" in CMS text can't break out of the tag.
+const jsonLdStr = JSON.stringify(jsonLd).replace(/</g, '\\u003c')
 ---
 
 <!doctype html>
@@ -57,6 +81,17 @@ const ogImage = ogSource
     <meta name="description" content={metaDescription} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="canonical" href={canonical} />
+    {
+      preloadSrcset && (
+        <link
+          rel="preload"
+          as="image"
+          imagesrcset={preloadSrcset}
+          imagesizes={preloadSizes}
+          fetchpriority="high"
+        />
+      )
+    }
     <title>{title}</title>
 
     <!-- Open Graph / Twitter — link previews on WhatsApp, IG, X, etc. -->
@@ -72,6 +107,8 @@ const ogImage = ogSource
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={metaDescription} />
     {ogImage && <meta name="twitter:image" content={ogImage} />}
+
+    <script type="application/ld+json" set:html={jsonLdStr} is:inline />
 
     <ClientRouter />
   </head>
