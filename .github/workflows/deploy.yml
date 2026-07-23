@@ -22,6 +22,8 @@ env:
   # Public Sanity config, inlined into the static build (not secrets)
   PUBLIC_SANITY_PROJECT_ID: f24czf8c
   PUBLIC_SANITY_DATASET: production
+  # Web3Forms access key — public by design (tied to the destination inbox).
+  PUBLIC_WEB3FORMS_KEY: 883cb7c9-e3d0-4223-a2b5-fc1c91bcfc4b
 
 jobs:
   build-and-push:
@@ -54,6 +56,7 @@ jobs:
           build-args: |
             PUBLIC_SANITY_PROJECT_ID=${{ env.PUBLIC_SANITY_PROJECT_ID }}
             PUBLIC_SANITY_DATASET=${{ env.PUBLIC_SANITY_DATASET }}
+            PUBLIC_WEB3FORMS_KEY=${{ env.PUBLIC_WEB3FORMS_KEY }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

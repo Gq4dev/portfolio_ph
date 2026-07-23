@@ -8,8 +8,10 @@ WORKDIR /app
 # These are public values, not secrets.
 ARG PUBLIC_SANITY_PROJECT_ID
 ARG PUBLIC_SANITY_DATASET
+ARG PUBLIC_WEB3FORMS_KEY
 ENV PUBLIC_SANITY_PROJECT_ID=$PUBLIC_SANITY_PROJECT_ID
 ENV PUBLIC_SANITY_DATASET=$PUBLIC_SANITY_DATASET
+ENV PUBLIC_WEB3FORMS_KEY=$PUBLIC_WEB3FORMS_KEY
 
 # Install deps first for better layer caching. patches/ must be present
 # before `npm ci` because the postinstall hook runs patch-package.
