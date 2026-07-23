@@ -83,18 +83,10 @@ const ogImage = ogSource
 
     <header class="nav wrap" transition:persist>
       <a class="nav__brand" href="/">{brand}</a>
-      <button
-        class="nav__burger"
-        type="button"
-        aria-expanded="false"
-        aria-controls="nav-links"
-        aria-label="Open menu"
-        data-nav-burger
-      >
-        <span class="nav__burger-lines" aria-hidden="true"></span>
-      </button>
-      <nav aria-label="Main navigation">
-        <ul class="nav__links" id="nav-links">
+
+      <div class="nav__cluster">
+        <nav class="nav__panel" aria-label="Main navigation">
+          <ul class="nav__links" id="nav-links">
           {
             categories.length > 0 && (
               <li class="nav__dropdown">
@@ -142,60 +134,71 @@ const ogImage = ogSource
               ><span data-lang-block="es">Contacto</span>
             </a>
           </li>
-          <li class="nav__lang">
-            <div class="lang" role="group" aria-label="Language / Idioma">
-              <button
-                class="lang__opt"
-                type="button"
-                data-set-lang="en"
-                aria-pressed="true">EN</button
-              ><span class="lang__sep" aria-hidden="true">/</span
-              ><button
-                class="lang__opt"
-                type="button"
-                data-set-lang="es"
-                aria-pressed="false">ES</button
-              >
-            </div>
-          </li>
-          <li class="nav__theme">
-            <button
-              class="theme"
-              type="button"
-              data-theme-toggle
-              aria-label="Switch to light theme"
-            >
-              <svg
-                class="theme__icon theme__icon--sun"
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="4.2" />
-                <path
-                  d="M12 2v2.5M12 19.5V22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M2 12h2.5M19.5 12H22M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"
-                />
-              </svg>
-              <svg
-                class="theme__icon theme__icon--moon"
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-                aria-hidden="true"
-              >
-                <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
-              </svg>
-            </button>
-          </li>
         </ul>
-      </nav>
+        </nav>
+
+        <div class="nav__utils">
+          <div class="lang" role="group" aria-label="Language / Idioma">
+            <button
+              class="lang__opt"
+              type="button"
+              data-set-lang="en"
+              aria-pressed="true">EN</button
+            ><span class="lang__sep" aria-hidden="true">/</span
+            ><button
+              class="lang__opt"
+              type="button"
+              data-set-lang="es"
+              aria-pressed="false">ES</button
+            >
+          </div>
+          <button
+            class="theme"
+            type="button"
+            data-theme-toggle
+            aria-label="Switch to light theme"
+          >
+            <svg
+              class="theme__icon theme__icon--sun"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="4.2" />
+              <path
+                d="M12 2v2.5M12 19.5V22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M2 12h2.5M19.5 12H22M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"
+              />
+            </svg>
+            <svg
+              class="theme__icon theme__icon--moon"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              aria-hidden="true"
+            >
+              <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
+            </svg>
+          </button>
+        </div>
+
+        <button
+          class="nav__burger"
+          type="button"
+          aria-expanded="false"
+          aria-controls="nav-links"
+          aria-label="Open menu"
+          data-nav-burger
+        >
+          <span class="nav__burger-lines" aria-hidden="true"></span>
+        </button>
+      </div>
     </header>
 
     <main id="main">
@@ -262,7 +265,7 @@ const ogImage = ogSource
         top: 0;
         z-index: 100;
         display: flex;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
         gap: 1.5rem;
         padding-block: clamp(1rem, 2vw, 1.6rem);
@@ -276,6 +279,17 @@ const ogImage = ogSource
         font-weight: 400;
         letter-spacing: -0.02em;
         white-space: nowrap;
+      }
+      /* Right-side group: nav links + utility toggles + (mobile) burger. */
+      .nav__cluster {
+        display: flex;
+        align-items: center;
+        gap: clamp(0.9rem, 2.4vw, 2.2rem);
+      }
+      .nav__utils {
+        display: flex;
+        align-items: center;
+        gap: clamp(0.75rem, 2vw, 1.2rem);
       }
       .nav__links {
         display: flex;
@@ -398,9 +412,6 @@ const ogImage = ogSource
         display: none;
       }
       @media (max-width: 640px) {
-        .nav {
-          align-items: center;
-        }
         .nav__burger {
           display: inline-flex;
           align-items: center;
@@ -408,7 +419,8 @@ const ogImage = ogSource
           width: 2.4rem;
           height: 2.4rem;
           color: var(--text);
-          z-index: 130;
+          position: relative;
+          z-index: 130; /* above the full-screen overlay */
         }
         .nav__burger-lines,
         .nav__burger-lines::before,
@@ -444,50 +456,83 @@ const ogImage = ogSource
           transform: translateY(-7px) rotate(-45deg);
         }
 
-        /* Links collapse into a dropdown panel under the header. */
-        .nav__links {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 1.3rem;
-          padding: 1.4rem var(--gutter) 1.9rem;
-          font-size: var(--step-0);
-          background: color-mix(in srgb, var(--bg) 96%, transparent);
-          backdrop-filter: blur(14px);
-          border-bottom: 1px solid var(--line);
-          transform: translateY(-10px);
-          opacity: 0;
-          visibility: hidden;
-          pointer-events: none;
-          transition: transform 0.3s var(--ease), opacity 0.3s var(--ease),
-            visibility 0s linear 0.3s;
-        }
-        .nav[data-menu-open='true'] .nav__links {
-          transform: none;
-          opacity: 1;
-          visibility: visible;
-          pointer-events: auto;
-          transition: transform 0.3s var(--ease), opacity 0.3s var(--ease),
-            visibility 0s linear 0s;
+        /* Toggles stay in the header, above the overlay, always usable. */
+        .nav__utils {
+          position: relative;
+          z-index: 130;
+          gap: 0.9rem;
         }
 
-        /* The Galleries submenu sits inline within the panel, not floating. */
+        /* Nav links become a full-screen centered overlay. */
+        .nav__panel {
+          position: fixed;
+          inset: 0;
+          z-index: 120;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: color-mix(in srgb, var(--bg) 98%, transparent);
+          backdrop-filter: blur(20px);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.4s var(--ease), visibility 0s linear 0.4s;
+        }
+        .nav[data-menu-open='true'] .nav__panel {
+          opacity: 1;
+          visibility: visible;
+          transition: opacity 0.4s var(--ease), visibility 0s linear 0s;
+        }
+        .nav__links {
+          flex-direction: column;
+          align-items: center;
+          gap: clamp(1.75rem, 6vh, 3rem);
+          font-size: var(--step-3);
+          text-align: center;
+        }
+        .nav__links a,
+        .nav__trigger {
+          color: var(--text);
+        }
+        /* Staggered entrance for the options once the overlay is open. */
+        .nav__links > li {
+          opacity: 0;
+          transform: translateY(14px);
+          transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+        }
+        .nav[data-menu-open='true'] .nav__links > li {
+          opacity: 1;
+          transform: none;
+        }
+        .nav[data-menu-open='true'] .nav__links > li:nth-child(1) {
+          transition-delay: 0.1s;
+        }
+        .nav[data-menu-open='true'] .nav__links > li:nth-child(2) {
+          transition-delay: 0.16s;
+        }
+        .nav[data-menu-open='true'] .nav__links > li:nth-child(3) {
+          transition-delay: 0.22s;
+        }
+        .nav__trigger {
+          font-size: var(--step-3);
+        }
+
+        /* Galleries submenu: centered under the trigger. */
         .nav__menu {
           position: static;
           min-width: 0;
           max-width: none;
-          margin-top: 0.4rem;
-          padding: 0.25rem 0 0 0.6rem;
+          margin-top: 1rem;
+          padding: 0;
           background: transparent;
           border: none;
           box-shadow: none;
           backdrop-filter: none;
+          justify-items: center;
+          gap: 0.5rem;
         }
-        .nav__lang {
-          margin-top: 0.3rem;
+        .nav__menu a {
+          font-size: var(--step-0);
+          text-align: center;
         }
       }
 
@@ -705,6 +750,8 @@ const ogImage = ogSource
           nav.setAttribute('data-menu-open', String(open))
           burger.setAttribute('aria-expanded', String(open))
           burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu')
+          // Lock page scroll behind the full-screen overlay.
+          document.body.style.overflow = open ? 'hidden' : ''
         }
 
         // Always start closed after (re)init / navigation.
