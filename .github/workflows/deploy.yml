@@ -24,6 +24,9 @@ env:
   PUBLIC_SANITY_DATASET: production
   # Web3Forms access key — public by design (tied to the destination inbox).
   PUBLIC_WEB3FORMS_KEY: 883cb7c9-e3d0-4223-a2b5-fc1c91bcfc4b
+  # Umami analytics — self-hosted; the script src and website id are public.
+  PUBLIC_UMAMI_SRC: https://analytics.178.104.93.97.nip.io/script.js
+  PUBLIC_UMAMI_ID: 715e6042-1922-487a-a1dd-a92bb424e123
 
 jobs:
   build-and-push:
@@ -57,6 +60,8 @@ jobs:
             PUBLIC_SANITY_PROJECT_ID=${{ env.PUBLIC_SANITY_PROJECT_ID }}
             PUBLIC_SANITY_DATASET=${{ env.PUBLIC_SANITY_DATASET }}
             PUBLIC_WEB3FORMS_KEY=${{ env.PUBLIC_WEB3FORMS_KEY }}
+            PUBLIC_UMAMI_SRC=${{ env.PUBLIC_UMAMI_SRC }}
+            PUBLIC_UMAMI_ID=${{ env.PUBLIC_UMAMI_ID }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
