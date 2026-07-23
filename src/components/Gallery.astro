@@ -41,9 +41,6 @@ const items = photos.map((photo, i) => ({
           style={`--reveal-delay:${(it.index % 3) * 0.08}s`}
           aria-label={`Ampliar foto ${it.num}: ${it.alt}`}
         >
-          <span class="shot__num" aria-hidden="true">
-            {it.num}
-          </span>
           <OptimizedImage
             image={it.photo}
             alt={it.alt}
@@ -77,7 +74,6 @@ const items = photos.map((photo, i) => ({
   <figure class="lightbox__stage">
     <img class="lightbox__img" id="lightbox-img" src="" alt="" />
     <figcaption class="lightbox__caption">
-      <span class="lightbox__num" id="lightbox-num"></span>
       <span id="lightbox-text"></span>
     </figcaption>
   </figure>
@@ -133,20 +129,6 @@ const items = photos.map((photo, i) => ({
   .shot:focus-visible :global(.shot__img) {
     transform: scale(1.04);
     filter: saturate(1.05) brightness(1);
-  }
-
-  /* Signature: contact-sheet numbering. */
-  .shot__num {
-    position: absolute;
-    top: 0.75rem;
-    left: 0.85rem;
-    z-index: 3;
-    font-size: var(--step--1);
-    font-weight: 500;
-    letter-spacing: 0.16em;
-    color: var(--accent);
-    mix-blend-mode: screen;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
   }
 
   /* Hover: reveal caption/title over the image. */
@@ -227,12 +209,6 @@ const items = photos.map((photo, i) => ({
     font-size: var(--step--1);
     color: var(--text-dim);
   }
-  .lightbox__num {
-    color: var(--accent);
-    letter-spacing: 0.16em;
-    font-weight: 500;
-  }
-
   .lightbox__close {
     position: absolute;
     top: clamp(0.75rem, 3vw, 2rem);
@@ -300,9 +276,8 @@ const items = photos.map((photo, i) => ({
     if (!box) return
 
     const img = document.getElementById('lightbox-img') as HTMLImageElement | null
-    const numEl = document.getElementById('lightbox-num')
     const textEl = document.getElementById('lightbox-text')
-    if (!img || !numEl || !textEl) return
+    if (!img || !textEl) return
 
     const triggers = Array.from(
       document.querySelectorAll<HTMLElement>('[data-lightbox-open]')
@@ -324,7 +299,6 @@ const items = photos.map((photo, i) => ({
       if (!s) return
       img.src = s.full
       img.alt = s.alt
-      numEl.textContent = s.num
       textEl.textContent = s.caption || s.alt
     }
 
