@@ -2,18 +2,27 @@
 import Layout from '../layouts/Layout.astro'
 ---
 
-<Layout title="Página no encontrada — Jesica Mariana">
+<Layout title="Page not found — Jesica Mariana">
   <section class="nf wrap">
     <p class="eyebrow" data-reveal>Error 404</p>
     <h1 class="nf__title" data-reveal style="--reveal-delay:0.1s">
-      Esta toma<br /><span class="nf__accent">no existe</span>
+      <span data-lang-block="en"
+        >This shot<br /><span class="nf__accent">doesn't exist</span></span
+      ><span data-lang-block="es"
+        >Esta toma<br /><span class="nf__accent">no existe</span></span
+      >
     </h1>
     <p class="nf__text" data-reveal style="--reveal-delay:0.2s">
-      La página que buscás se movió o nunca estuvo acá.
+      <span data-lang-block="en"
+        >The page you're looking for moved or was never here.</span
+      ><span data-lang-block="es"
+        >La página que buscás se movió o nunca estuvo acá.</span
+      >
     </p>
-    <a class="nf__link" href="/" data-reveal style="--reveal-delay:0.28s"
-      >← Volver al inicio</a
-    >
+    <a class="nf__link" href="/" data-reveal style="--reveal-delay:0.28s">
+      <span data-lang-block="en">← Back home</span
+      ><span data-lang-block="es">← Volver al inicio</span>
+    </a>
   </section>
 </Layout>
 

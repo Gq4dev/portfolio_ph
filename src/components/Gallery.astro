@@ -24,7 +24,8 @@ const items = photos.map((photo, i) => ({
 {
   items.length === 0 ? (
     <p class="gallery-empty wrap" data-reveal>
-      Todavía no hay fotografías en esta serie.
+      <span data-lang-block="en">There are no photos in this series yet.</span>
+      <span data-lang-block="es">Todavía no hay fotografías en esta serie.</span>
     </p>
   ) : (
     <div class="gallery wrap">

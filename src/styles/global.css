@@ -153,6 +153,16 @@ button {
   border: 0;
 }
 
+/* ---------- language toggle (English-first) ----------
+   Both languages are rendered into the DOM; the active one is chosen by
+   <html data-lang>. The attribute is set statically to "en", so only English
+   paints on first load (no flash). The toggle button just flips the attribute.
+   display:none also keeps the inactive language out of the a11y tree. */
+html[data-lang='en'] [data-lang-block='es'],
+html[data-lang='es'] [data-lang-block='en'] {
+  display: none !important;
+}
+
 /* ---------- reveal (page-load stagger + scroll) ---------- */
 [data-reveal] {
   opacity: 0;

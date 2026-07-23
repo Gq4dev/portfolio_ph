@@ -16,8 +16,18 @@ export default defineType({
       type: 'string',
     }),
     defineField({
+      name: 'taglineEn',
+      title: 'Lema (English)',
+      type: 'string',
+    }),
+    defineField({
       name: 'shortBio',
       title: 'Biografía breve',
+      type: 'text',
+    }),
+    defineField({
+      name: 'shortBioEn',
+      title: 'Biografía breve (English)',
       type: 'text',
     }),
     defineField({

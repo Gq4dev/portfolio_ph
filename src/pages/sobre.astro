@@ -5,7 +5,8 @@ import { getAbout, getSiteSettings } from '../lib/queries'
 
 const [about, settings] = await Promise.all([getAbout(), getSiteSettings()])
 
-const heading = about?.title || `Sobre ${settings.title}`
+const headingEn = about?.titleEn || `About ${settings.title}`
+const headingEs = about?.title || `Sobre ${settings.title}`
 
 // Minimal Portable Text → plain paragraphs (block type only).
 function blocksToParagraphs(blocks: unknown[] | undefined): string[] {
@@ -18,32 +19,55 @@ function blocksToParagraphs(blocks: unknown[] | undefined): string[] {
     .filter(Boolean)
 }
 
-const paragraphs = blocksToParagraphs(about?.bio)
-const fallback = [
+const fallbackEn = [
+  settings.shortBioEn ||
+    'Nature and portrait photographer. I work with natural light and long waits: I let the scene reveal itself instead of forcing it.',
+  "This section hasn't been filled in the content panel yet. Once the photographer adds her bio, it will appear here.",
+]
+const fallbackEs = [
   settings.shortBio ||
     'Fotógrafa de naturaleza y retrato. Trabajo con luz natural y tiempos largos: espero a que la escena se revele en lugar de forzarla.',
   'Esta sección todavía no fue completada en el panel de contenido. Cuando la fotógrafa cargue su biografía, aparecerá aquí.',
 ]
-const body = paragraphs.length ? paragraphs : fallback
+const paragraphsEn = blocksToParagraphs(about?.bioEn)
+const paragraphsEs = blocksToParagraphs(about?.bio)
+const bodyEn = paragraphsEn.length ? paragraphsEn : fallbackEn
+const bodyEs = paragraphsEs.length ? paragraphsEs : fallbackEs
 ---
 
-<Layout title={`${heading} — ${settings.title}`}>
+<Layout title={`${headingEn} — ${settings.title}`}>
   <section class="about wrap">
     <div class="about__text">
-      <p class="eyebrow" data-reveal>Sobre</p>
+      <p class="eyebrow" data-reveal>
+        <span data-lang-block="en">About</span
+        ><span data-lang-block="es">Sobre</span>
+      </p>
       <h1 class="about__title" data-reveal style="--reveal-delay:0.1s">
-        {heading}
+        <span data-lang-block="en">{headingEn}</span
+        ><span data-lang-block="es">{headingEs}</span>
       </h1>
-      <div class="about__body">
+      <div class="about__body" data-lang-block="en">
         {
-          body.map((p, i) => (
+          bodyEn.map((p, i) => (
             <p data-reveal style={`--reveal-delay:${0.18 + i * 0.06}s`}>
               {p}
             </p>
           ))
         }
       </div>
-      <a class="about__link" href="/contacto" data-reveal>Contacto →</a>
+      <div class="about__body" data-lang-block="es">
+        {
+          bodyEs.map((p, i) => (
+            <p data-reveal style={`--reveal-delay:${0.18 + i * 0.06}s`}>
+              {p}
+            </p>
+          ))
+        }
+      </div>
+      <a class="about__link" href="/contacto" data-reveal>
+        <span data-lang-block="en">Contact →</span
+        ><span data-lang-block="es">Contacto →</span>
+      </a>
     </div>
 
     {

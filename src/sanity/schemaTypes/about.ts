@@ -11,6 +11,11 @@ export default defineType({
       type: 'string',
     }),
     defineField({
+      name: 'titleEn',
+      title: 'Título (English)',
+      type: 'string',
+    }),
+    defineField({
       name: 'portrait',
       title: 'Retrato',
       type: 'image',
@@ -27,6 +32,12 @@ export default defineType({
     defineField({
       name: 'bio',
       title: 'Biografía',
+      type: 'array',
+      of: [{ type: 'block' }],
+    }),
+    defineField({
+      name: 'bioEn',
+      title: 'Biografía (English)',
       type: 'array',
       of: [{ type: 'block' }],
     }),

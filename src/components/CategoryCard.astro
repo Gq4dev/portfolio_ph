@@ -1,23 +1,33 @@
 ---
 import OptimizedImage from './OptimizedImage.astro'
+import { photoCountShort } from '../lib/i18n'
 import type { CategorySummary } from '../lib/queries'
 
 interface Props {
   category: CategorySummary
   index: number
+  /** Columns to span at the 3-col breakpoint. 3 = full-width featured card
+      that fills an orphan row; 2 = fills the tail of a two-orphan row. */
+  span?: 1 | 2 | 3
 }
 
-const { category, index } = Astro.props
-const label =
-  category.photoCount === 1 ? '1 foto' : `${category.photoCount} fotos`
+const { category, index, span = 1 } = Astro.props
+const label = photoCountShort(category.photoCount)
+// sizes tracks the real render: 1-col <720px, 2-col 720–1100px, span at >1100px.
+const desktopVw = span === 3 ? '92vw' : span === 2 ? '62vw' : '31vw'
+const imgSizes = `(max-width: 720px) 92vw, (max-width: 1100px) 46vw, ${desktopVw}`
 ---
 
 <a
-  class="card"
+  class:list={[
+    'card',
+    span === 3 && 'card--span3',
+    span === 2 && 'card--span2',
+  ]}
   href={`/${category.slug}`}
   data-reveal
   style={`--reveal-delay:${index * 0.09}s`}
-  aria-label={`${category.title} — ${label}`}
+  aria-label={`${category.titleEn} — ${label.en}`}
 >
   <div class="card__frame">
     {
@@ -25,7 +35,7 @@ const label =
         <OptimizedImage
           image={category.cover}
           alt={category.cover.alt ?? category.title}
-          sizes="(max-width: 720px) 92vw, (max-width: 1100px) 60vw, 640px"
+          sizes={imgSizes}
           class="card__img"
         />
       ) : (
@@ -35,9 +45,18 @@ const label =
   </div>
 
   <div class="card__meta">
-    <h3 class="card__title">{category.title}</h3>
-    <span class="card__count">{label}</span>
-    <span class="card__go" aria-hidden="true">Ver serie →</span>
+    <h3 class="card__title">
+      <span data-lang-block="en">{category.titleEn}</span
+      ><span data-lang-block="es">{category.title}</span>
+    </h3>
+    <span class="card__count">
+      <span data-lang-block="en">{label.en}</span
+      ><span data-lang-block="es">{label.es}</span>
+    </span>
+    <span class="card__go" aria-hidden="true">
+      <span data-lang-block="en">View series →</span
+      ><span data-lang-block="es">Ver serie →</span>
+    </span>
   </div>
 </a>
 
@@ -45,6 +64,23 @@ const label =
   .card {
     display: block;
     color: inherit;
+  }
+  /* Orphan-fill at the 3-col breakpoint. The featured card spans the wider
+     row and shows its cover at its NATURAL proportions — no fixed ratio, no
+     crop. The doubled `.card` class raises specificity so this wins over both
+     the base card ratio and OptimizedImage's figure aspect-ratio. Below
+     1100px the grid is 2-/1-col and closes on its own, so this must NOT apply. */
+  @media (min-width: 1100px) {
+    .card--span2 {
+      grid-column: span 2;
+    }
+    .card--span3 {
+      grid-column: span 3;
+    }
+    .card--span2.card :global(.card__img),
+    .card--span3.card :global(.card__img) {
+      aspect-ratio: auto;
+    }
   }
   .card__frame {
     position: relative;

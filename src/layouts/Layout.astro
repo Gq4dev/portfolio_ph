@@ -6,6 +6,7 @@ import '@fontsource/space-grotesk/700.css'
 import '../styles/global.css'
 import { ClientRouter } from 'astro:transitions'
 import { getSiteSettings, getCategories } from '../lib/queries'
+import { urlFor } from '../lib/image'
 
 interface Props {
   title: string
@@ -22,27 +23,67 @@ const [settings, categories] = await Promise.all([
 const brand = settings.title
 const metaDescription =
   description ||
+  settings.shortBioEn ||
   settings.shortBio ||
-  `${settings.title} — ${settings.tagline}. Portfolio de fotografía.`
+  `${settings.title} — ${settings.tagline}. Photography portfolio.`
+
+// Canonical + Open Graph. Astro.site comes from astro.config (set per env).
+const canonical = Astro.site
+  ? new URL(Astro.url.pathname, Astro.site).href
+  : Astro.url.href
+const ogSource =
+  settings.featured[0] ?? categories.find((c) => c.cover)?.cover ?? null
+const ogImage = ogSource
+  ? urlFor(ogSource).width(1200).height(630).fit('crop').auto('format').url()
+  : null
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang="en" data-lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={metaDescription} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={canonical} />
     <title>{title}</title>
+
+    <!-- Open Graph / Twitter — link previews on WhatsApp, IG, X, etc. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={brand} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={metaDescription} />
+    <meta property="og:url" content={canonical} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogImage && <meta property="og:image:width" content="1200" />}
+    {ogImage && <meta property="og:image:height" content="630" />}
+    <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={metaDescription} />
+    {ogImage && <meta name="twitter:image" content={ogImage} />}
+
     <ClientRouter />
   </head>
   <body>
-    <a class="skip" href="#main">Saltar al contenido</a>
+    <a class="skip" href="#main">
+      <span data-lang-block="en">Skip to content</span
+      ><span data-lang-block="es">Saltar al contenido</span>
+    </a>
 
     <header class="nav wrap" transition:persist>
       <a class="nav__brand" href="/">{brand}</a>
-      <nav aria-label="Navegación principal">
-        <ul class="nav__links">
+      <button
+        class="nav__burger"
+        type="button"
+        aria-expanded="false"
+        aria-controls="nav-links"
+        aria-label="Open menu"
+        data-nav-burger
+      >
+        <span class="nav__burger-lines" aria-hidden="true"></span>
+      </button>
+      <nav aria-label="Main navigation">
+        <ul class="nav__links" id="nav-links">
           {
             categories.length > 0 && (
               <li class="nav__dropdown">
@@ -53,7 +94,8 @@ const metaDescription =
                   aria-haspopup="true"
                   aria-controls="nav-galerias"
                 >
-                  Galerías
+                  <span data-lang-block="en">Galleries</span>
+                  <span data-lang-block="es">Galerías</span>
                   <svg
                     class="nav__caret"
                     viewBox="0 0 24 24"
@@ -77,8 +119,47 @@ const metaDescription =
               </li>
             )
           }
-          <li><a href="/sobre">Sobre</a></li>
-          <li><a href="/contacto">Contacto</a></li>
+          <li>
+            <a href="/sobre">
+              <span data-lang-block="en">About</span
+              ><span data-lang-block="es">Sobre</span>
+            </a>
+          </li>
+          <li>
+            <a href="/contacto">
+              <span data-lang-block="en">Contact</span
+              ><span data-lang-block="es">Contacto</span>
+            </a>
+          </li>
+          <li class="nav__lang">
+            <button class="lang" type="button" data-lang-toggle aria-label="Cambiar a español">
+              <span class="lang__flag" data-lang-block="en" aria-hidden="true">
+                <svg viewBox="0 0 60 40" width="22" height="15">
+                  <clipPath id="flag-gb"><rect width="60" height="40" rx="4" /></clipPath>
+                  <g clip-path="url(#flag-gb)">
+                    <rect width="60" height="40" fill="#012169" />
+                    <path d="M0,0 60,40 M60,0 0,40" stroke="#fff" stroke-width="8" />
+                    <path d="M0,0 60,40 M60,0 0,40" stroke="#C8102E" stroke-width="4" />
+                    <path d="M30,0 V40 M0,20 H60" stroke="#fff" stroke-width="12" />
+                    <path d="M30,0 V40 M0,20 H60" stroke="#C8102E" stroke-width="6" />
+                  </g>
+                </svg>
+              </span>
+              <span class="lang__flag" data-lang-block="es" aria-hidden="true">
+                <svg viewBox="0 0 60 40" width="22" height="15">
+                  <clipPath id="flag-ar"><rect width="60" height="40" rx="4" /></clipPath>
+                  <g clip-path="url(#flag-ar)">
+                    <rect width="60" height="40" fill="#fff" />
+                    <rect width="60" height="13.33" fill="#74acdf" />
+                    <rect y="26.67" width="60" height="13.33" fill="#74acdf" />
+                    <circle cx="30" cy="20" r="3.6" fill="#f6b40e" />
+                  </g>
+                </svg>
+              </span>
+              <span class="lang__code" data-lang-block="en">EN</span
+              ><span class="lang__code" data-lang-block="es">ES</span>
+            </button>
+          </li>
         </ul>
       </nav>
     </header>
@@ -95,9 +176,26 @@ const metaDescription =
           {settings.instagram && (
             <li>
               <a
+                class="footer__ig"
                 href={`https://instagram.com/${settings.instagram.replace('@', '')}`}
                 rel="me noopener"
-                target="_blank">Instagram</a>
+                target="_blank"
+                aria-label="Instagram"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
+                </svg>
+              </a>
             </li>
           )}
           {settings.email && (
@@ -261,11 +359,101 @@ const metaDescription =
         background: color-mix(in srgb, var(--accent) 16%, transparent);
         outline: none;
       }
-      /* Anchor the panel to the right edge on small screens so it never clips. */
-      @media (max-width: 520px) {
-        .nav__menu {
-          left: auto;
+      /* ---- Mobile hamburger ---- */
+      .nav__burger {
+        display: none;
+      }
+      @media (max-width: 640px) {
+        .nav {
+          align-items: center;
+        }
+        .nav__burger {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 2.4rem;
+          height: 2.4rem;
+          color: var(--text);
+          z-index: 130;
+        }
+        .nav__burger-lines,
+        .nav__burger-lines::before,
+        .nav__burger-lines::after {
+          display: block;
+          width: 22px;
+          height: 1.6px;
+          background: currentColor;
+          transition: transform 0.3s var(--ease), background 0.2s var(--ease);
+        }
+        .nav__burger-lines {
+          position: relative;
+        }
+        .nav__burger-lines::before,
+        .nav__burger-lines::after {
+          content: '';
+          position: absolute;
+          left: 0;
+        }
+        .nav__burger-lines::before {
+          top: -7px;
+        }
+        .nav__burger-lines::after {
+          top: 7px;
+        }
+        .nav__burger[aria-expanded='true'] .nav__burger-lines {
+          background: transparent;
+        }
+        .nav__burger[aria-expanded='true'] .nav__burger-lines::before {
+          transform: translateY(7px) rotate(45deg);
+        }
+        .nav__burger[aria-expanded='true'] .nav__burger-lines::after {
+          transform: translateY(-7px) rotate(-45deg);
+        }
+
+        /* Links collapse into a dropdown panel under the header. */
+        .nav__links {
+          position: absolute;
+          top: 100%;
+          left: 0;
           right: 0;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1.3rem;
+          padding: 1.4rem var(--gutter) 1.9rem;
+          font-size: var(--step-0);
+          background: color-mix(in srgb, var(--bg) 96%, transparent);
+          backdrop-filter: blur(14px);
+          border-bottom: 1px solid var(--line);
+          transform: translateY(-10px);
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: transform 0.3s var(--ease), opacity 0.3s var(--ease),
+            visibility 0s linear 0.3s;
+        }
+        .nav[data-menu-open='true'] .nav__links {
+          transform: none;
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transition: transform 0.3s var(--ease), opacity 0.3s var(--ease),
+            visibility 0s linear 0s;
+        }
+
+        /* The Galleries submenu sits inline within the panel, not floating. */
+        .nav__menu {
+          position: static;
+          min-width: 0;
+          max-width: none;
+          margin-top: 0.4rem;
+          padding: 0.25rem 0 0 0.6rem;
+          background: transparent;
+          border: none;
+          box-shadow: none;
+          backdrop-filter: none;
+        }
+        .nav__lang {
+          margin-top: 0.3rem;
         }
       }
 
@@ -294,6 +482,41 @@ const metaDescription =
       }
       .footer__meta a:hover {
         color: var(--accent);
+      }
+      .footer__ig {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      /* ---- Language toggle ---- */
+      .nav__lang {
+        display: inline-flex;
+      }
+      .lang {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.25rem 0.55rem;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--text-dim);
+        font-size: var(--step--2);
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+      }
+      .lang:hover,
+      .lang:focus-visible {
+        color: var(--text);
+        border-color: var(--accent);
+      }
+      .lang__flag {
+        display: inline-flex;
+      }
+      .lang__flag svg {
+        border-radius: 3px;
+        display: block;
       }
     </style>
 
@@ -409,6 +632,80 @@ const metaDescription =
 
       initNavDropdown()
       document.addEventListener('astro:page-load', initNavDropdown)
+
+      // Mobile hamburger. The nav is persisted across View Transitions, so we
+      // bind the toggle once and only reset the open/closed state on navigation.
+      function initNavBurger() {
+        const nav = document.querySelector<HTMLElement>('.nav')
+        const burger = document.querySelector<HTMLButtonElement>('[data-nav-burger]')
+        if (!nav || !burger) return
+
+        const setOpen = (open: boolean) => {
+          nav.setAttribute('data-menu-open', String(open))
+          burger.setAttribute('aria-expanded', String(open))
+          burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu')
+        }
+
+        // Always start closed after (re)init / navigation.
+        setOpen(false)
+
+        if (burger.dataset.burgerReady === 'true') return
+        burger.dataset.burgerReady = 'true'
+
+        burger.addEventListener('click', () => {
+          setOpen(nav.getAttribute('data-menu-open') !== 'true')
+        })
+        // Following any link inside the panel closes it.
+        nav
+          .querySelectorAll<HTMLAnchorElement>('.nav__links a')
+          .forEach((a) => a.addEventListener('click', () => setOpen(false)))
+        // Escape closes the panel.
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') setOpen(false)
+        })
+      }
+
+      initNavBurger()
+      document.addEventListener('astro:page-load', initNavBurger)
+
+      // Language toggle. The site is English-first: on every full page load it
+      // starts in English (we never persist to storage). CSS shows the active
+      // language via <html data-lang>; this only flips the attribute. The state
+      // is held on `window` so it survives client-side View Transitions but
+      // resets to English on a hard reload.
+      type Lang = 'en' | 'es'
+      const w = window as unknown as { __lang?: Lang }
+
+      function applyLang(lang: Lang) {
+        const root = document.documentElement
+        root.setAttribute('lang', lang)
+        root.setAttribute('data-lang', lang)
+        const btn = document.querySelector<HTMLButtonElement>('[data-lang-toggle]')
+        if (btn) {
+          btn.setAttribute(
+            'aria-label',
+            lang === 'en' ? 'Cambiar a español' : 'Switch to English'
+          )
+        }
+      }
+
+      function initLang() {
+        w.__lang = w.__lang || 'en'
+        applyLang(w.__lang)
+
+        const btn = document.querySelector<HTMLButtonElement>('[data-lang-toggle]')
+        if (!btn) return
+        // The nav is persisted across View Transitions — bind the click once.
+        if (btn.dataset.langReady === 'true') return
+        btn.dataset.langReady = 'true'
+        btn.addEventListener('click', () => {
+          w.__lang = w.__lang === 'en' ? 'es' : 'en'
+          applyLang(w.__lang)
+        })
+      }
+
+      initLang()
+      document.addEventListener('astro:page-load', initLang)
     </script>
   </body>
 </html>

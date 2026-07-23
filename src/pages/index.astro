@@ -3,11 +3,32 @@ import Layout from '../layouts/Layout.astro'
 import OptimizedImage from '../components/OptimizedImage.astro'
 import CategoryCard from '../components/CategoryCard.astro'
 import { getSiteSettings, getCategories } from '../lib/queries'
+import { collectionCount } from '../lib/i18n'
 
 const [settings, categories] = await Promise.all([
   getSiteSettings(),
   getCategories(),
 ])
+
+const collections = collectionCount(categories.length)
+
+// Orphan fill for the 3-col grid: a lone last card spans the full row (3),
+// the tail of a two-card last row spans the remaining pair (2). Only takes
+// effect at >1100px — see CategoryCard's media query.
+const seriesTotal = categories.length
+const seriesSpan = (i: number): 1 | 2 | 3 => {
+  const rem = seriesTotal % 3
+  if (i !== seriesTotal - 1) return 1
+  if (rem === 1) return 3
+  if (rem === 2) return 2
+  return 1
+}
+const heroIntroEn =
+  settings.shortBioEn ||
+  'Photography that chases honest light — portraits, landscape, and the wildlife that shows up when you stay still.'
+const heroIntroEs =
+  settings.shortBio ||
+  'Fotografía que persigue la luz honesta — retratos, paisaje y la vida silvestre que aparece cuando una se queda quieta.'
 
 // Hero image (LCP): featured[0] → else first category cover/photo.
 const heroImage = settings.featured[0] ?? categories[0]?.cover ?? null
@@ -24,7 +45,8 @@ const lastName = rest.join(' ')
   <section class="hero wrap" aria-labelledby="hero-name">
     <div class="hero__lead">
       <p class="eyebrow" data-reveal style="--reveal-delay:0.05s">
-        {settings.tagline} · Portfolio
+        <span data-lang-block="en">{settings.taglineEn} · Portfolio</span
+        ><span data-lang-block="es">{settings.tagline} · Portfolio</span>
       </p>
       <h1 class="hero__name" id="hero-name">
         <span class="hero__line" data-reveal style="--reveal-delay:0.12s"
@@ -43,10 +65,8 @@ const lastName = rest.join(' ')
         }
       </h1>
       <p class="hero__intro" data-reveal style="--reveal-delay:0.34s">
-        {
-          settings.shortBio ||
-            'Fotografía que persigue la luz honesta — retratos, paisaje y la vida silvestre que aparece cuando una se queda quieta.'
-        }
+        <span data-lang-block="en">{heroIntroEn}</span
+        ><span data-lang-block="es">{heroIntroEs}</span>
       </p>
       <a
         class="hero__cue"
@@ -54,7 +74,10 @@ const lastName = rest.join(' ')
         data-reveal
         style="--reveal-delay:0.44s"
       >
-        <span>Ver las series</span>
+        <span>
+          <span data-lang-block="en">View the series</span
+          ><span data-lang-block="es">Ver las series</span>
+        </span>
         <span class="hero__cue-line" aria-hidden="true"></span>
       </a>
     </div>
@@ -79,19 +102,25 @@ const lastName = rest.join(' ')
     <header class="series__head">
       <h2 class="series__title" id="series-title" data-reveal>Series</h2>
       <p class="series__meta" data-reveal style="--reveal-delay:0.08s">
-        {categories.length} {categories.length === 1 ? 'colección' : 'colecciones'}
+        <span data-lang-block="en">{collections.en}</span
+        ><span data-lang-block="es">{collections.es}</span>
       </p>
     </header>
 
     {
       categories.length === 0 ? (
         <p class="series__empty" data-reveal>
-          Las series se publicarán pronto.
+          <span data-lang-block="en">Series coming soon.</span
+          ><span data-lang-block="es">Las series se publicarán pronto.</span>
         </p>
       ) : (
         <div class="series__grid">
           {categories.map((category, i) => (
-            <CategoryCard category={category} index={i} />
+            <CategoryCard
+              category={category}
+              index={i}
+              span={seriesSpan(i)}
+            />
           ))}
         </div>
       )
@@ -209,6 +238,9 @@ const lastName = rest.join(' ')
     font-size: var(--step-1);
   }
 
+  /* Three-column editorial grid. When the last row would be short, the tail
+     card(s) span to fill it (see .card--span* in CategoryCard) so the layout
+     never leaves a gap — while keeping cards compact. */
   .series__grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -219,7 +251,6 @@ const lastName = rest.join(' ')
       grid-template-columns: repeat(2, 1fr);
     }
   }
-  /* Editorial rhythm: first card leads wider when many exist. */
   @media (min-width: 1100px) {
     .series__grid {
       grid-template-columns: repeat(3, 1fr);
