@@ -255,15 +255,20 @@ const items = photos.map((photo, i) => ({
   }
 
   @media (max-width: 640px) {
+    /* Carousel arrows centered vertically on the sides, over the image. */
     .lightbox__nav {
       position: absolute;
-      bottom: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      background: color-mix(in srgb, rgba(12, 12, 14, 1) 55%, transparent);
+      backdrop-filter: blur(4px);
     }
     .lightbox__nav--prev {
-      left: 25%;
+      left: 0.4rem;
     }
     .lightbox__nav--next {
-      right: 25%;
+      right: 0.4rem;
     }
   }
 </style>
@@ -385,6 +390,31 @@ const items = photos.map((photo, i) => ({
         }
       }
     })
+
+    // Touch swipe (mobile): swipe left → next photo, right → previous.
+    let touchX = 0
+    let touchY = 0
+    box.addEventListener(
+      'touchstart',
+      (e) => {
+        touchX = e.changedTouches[0].screenX
+        touchY = e.changedTouches[0].screenY
+      },
+      { passive: true }
+    )
+    box.addEventListener(
+      'touchend',
+      (e) => {
+        if (box.hidden) return
+        const dx = e.changedTouches[0].screenX - touchX
+        const dy = e.changedTouches[0].screenY - touchY
+        // Horizontal intent only, past a minimum distance — ignore taps/scrolls.
+        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+          go(dx < 0 ? 1 : -1)
+        }
+      },
+      { passive: true }
+    )
   }
 
   initLightbox()
