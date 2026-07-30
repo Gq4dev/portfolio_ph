@@ -5,6 +5,7 @@ import CategoryCard from '../components/CategoryCard.astro'
 import { getSiteSettings, getCategories } from '../lib/queries'
 import { collectionCount } from '../lib/i18n'
 import { urlFor } from '../lib/image'
+import { metaDescription } from '../lib/seo'
 
 const [settings, categories] = await Promise.all([
   getSiteSettings(),
@@ -50,10 +51,16 @@ const heroSrcset = heroImage
 
 const [firstName, ...rest] = settings.title.split(' ')
 const lastName = rest.join(' ')
+
+const description = metaDescription(
+  heroIntroEn,
+  seriesTotal > 0 ? `Browse ${seriesTotal} photo series.` : null
+)
 ---
 
 <Layout
   title={`${settings.title} — ${settings.tagline}`}
+  description={description}
   preloadSrcset={heroSrcset}
   preloadSizes={HERO_SIZES}
 >

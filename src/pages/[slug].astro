@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro'
 import Gallery from '../components/Gallery.astro'
 import { getCategories, getCategory } from '../lib/queries'
 import { photoCount } from '../lib/i18n'
+import { metaDescription } from '../lib/seo'
 import type { GetStaticPaths } from 'astro'
 
 export const getStaticPaths = (async () => {
@@ -19,9 +20,18 @@ if (!category) {
 
 const count = category.photos.length
 const label = photoCount(count)
+
+// Sanity has no per-category description field yet, so the snippet is built
+// from the series title and its size — still distinct per gallery.
+const description = metaDescription(
+  `${category.titleEn} — a photo series by Jesica Mariana.`,
+  count > 0
+    ? `${count} ${count === 1 ? 'photograph' : 'photographs'} shot in natural light.`
+    : null
+)
 ---
 
-<Layout title={`${category.titleEn} — Jesica Mariana`}>
+<Layout title={`${category.titleEn} — Jesica Mariana`} description={description}>
   <section class="cat-head wrap" aria-labelledby="cat-title">
     <a class="cat-back" href="/" data-reveal>
       <span aria-hidden="true">←</span> Series

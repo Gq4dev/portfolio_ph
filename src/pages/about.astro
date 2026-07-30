@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro'
 import OptimizedImage from '../components/OptimizedImage.astro'
 import { getAbout, getSiteSettings } from '../lib/queries'
+import { metaDescription } from '../lib/seo'
 
 const [about, settings] = await Promise.all([getAbout(), getSiteSettings()])
 
@@ -33,9 +34,16 @@ const paragraphsEn = blocksToParagraphs(about?.bioEn)
 const paragraphsEs = blocksToParagraphs(about?.bio)
 const bodyEn = paragraphsEn.length ? paragraphsEn : fallbackEn
 const bodyEs = paragraphsEs.length ? paragraphsEs : fallbackEs
+
+// Prefer the authored bio; the generic fallback copy is not worth indexing.
+const description = metaDescription(
+  paragraphsEn[0] ||
+    settings.shortBioEn ||
+    `Meet ${settings.title}, nature and portrait photographer. Natural light, long waits, and letting the scene reveal itself.`
+)
 ---
 
-<Layout title={`${headingEn} — ${settings.title}`}>
+<Layout title={`${headingEn} — ${settings.title}`} description={description}>
   <section class="about wrap">
     <div class="about__text">
       <p class="eyebrow" data-reveal>

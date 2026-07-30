@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro'
 import { getSiteSettings } from '../lib/queries'
+import { metaDescription } from '../lib/seo'
 
 const settings = await getSiteSettings()
 
@@ -18,9 +19,14 @@ const links = [
     href: `https://instagram.com/${settings.instagram.replace('@', '')}`,
   },
 ].filter(Boolean) as { label: string; value: string; href: string }[]
+
+const description = metaDescription(
+  `Get in touch with ${settings.title} about photo sessions, prints and collaborations.`,
+  links.length ? `Reach out via ${links.map((l) => l.label).join(', ')}.` : null
+)
 ---
 
-<Layout title={`Contact — ${settings.title}`}>
+<Layout title={`Contact — ${settings.title}`} description={description}>
   <section class="contact wrap">
     <p class="eyebrow" data-reveal>
       <span data-lang-block="en">Contact</span
