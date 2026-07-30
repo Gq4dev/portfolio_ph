@@ -25,7 +25,7 @@ env:
   # Web3Forms access key — public by design (tied to the destination inbox).
   PUBLIC_WEB3FORMS_KEY: 883cb7c9-e3d0-4223-a2b5-fc1c91bcfc4b
   # Umami analytics — self-hosted; the script src and website id are public.
-  PUBLIC_UMAMI_SRC: https://analytics.178.104.93.97.nip.io/script.js
+  PUBLIC_UMAMI_SRC: https://u.jesicamarianaph.com/script.js
   PUBLIC_UMAMI_ID: 715e6042-1922-487a-a1dd-a92bb424e123
 
 jobs:
