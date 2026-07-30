@@ -12,7 +12,37 @@ services:
       - traefik.http.routers.portfolio.entrypoints=websecure
       - traefik.http.routers.portfolio.tls=true
       - traefik.http.routers.portfolio.tls.certresolver=letsencrypt
+      - traefik.http.routers.portfolio.priority=1
+      - traefik.http.routers.portfolio.middlewares=sec-headers,site-csp
       - traefik.http.services.portfolio.loadbalancer.server.port=80
+
+      # Sanity Studio (/admin) talks to a dozen *.sanity.io hosts over XHR and
+      # WebSockets, so it gets the baseline headers but NOT the site CSP.
+      # Higher priority so this rule wins over the catch-all above.
+      - traefik.http.routers.portfolio-admin.rule=(Host(`jesicamarianaph.com`) || Host(`jesica.178.104.93.97.nip.io`)) && PathPrefix(`/admin`)
+      - traefik.http.routers.portfolio-admin.entrypoints=websecure
+      - traefik.http.routers.portfolio-admin.tls=true
+      - traefik.http.routers.portfolio-admin.tls.certresolver=letsencrypt
+      - traefik.http.routers.portfolio-admin.priority=100
+      - traefik.http.routers.portfolio-admin.middlewares=sec-headers
+      - traefik.http.routers.portfolio-admin.service=portfolio
+
+      # Baseline headers — safe for both the site and the Studio.
+      # stsIncludeSubdomains covers u.jesicamarianaph.com (valid cert, fine).
+      # stsPreload is deliberately OFF: getting off the preload list takes
+      # months, so it should only be enabled once HTTPS is proven permanent.
+      - traefik.http.middlewares.sec-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.sec-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.sec-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.sec-headers.headers.frameDeny=true
+      - traefik.http.middlewares.sec-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+
+      # CSP in REPORT-ONLY: the browser reports violations but blocks nothing.
+      # Verify the console is clean (home, gallery, contact form submit), then
+      # rename the header to Content-Security-Policy to enforce it.
+      # 'unsafe-inline' is required by Astro's inline scripts/styles and its
+      # View Transitions runtime — dropping it needs per-build hashes.
+      - "traefik.http.middlewares.site-csp.headers.customResponseHeaders.Content-Security-Policy-Report-Only=default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://cdn.sanity.io; script-src 'self' 'unsafe-inline' https://u.jesicamarianaph.com; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://api.web3forms.com https://u.jesicamarianaph.com; form-action 'self' https://api.web3forms.com"
       # Redirect www → apex (301) so there is a single canonical host.
       - traefik.http.routers.portfolio-www.rule=Host(`www.jesicamarianaph.com`)
       - traefik.http.routers.portfolio-www.entrypoints=websecure
