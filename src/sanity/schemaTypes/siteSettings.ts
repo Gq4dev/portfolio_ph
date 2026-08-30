@@ -38,7 +38,13 @@ export default defineType({
     defineField({
       name: 'whatsapp',
       title: 'WhatsApp',
+      description:
+        'Número internacional: código de país + área SIN el 0 + número SIN el 15. Argentina: 549 + área + número — ej. 5491123456789. Sin este dato, los botones de pedido del catálogo caen al email.',
       type: 'string',
+      validation: (Rule) =>
+        Rule.regex(/^\+?[0-9][0-9\s-]{7,19}$/, {
+          name: 'número internacional (ej. 5491123456789)',
+        }).warning('Sin código de país el enlace de WhatsApp no abre.'),
     }),
     defineField({
       name: 'instagram',

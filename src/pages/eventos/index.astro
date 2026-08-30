@@ -1,0 +1,212 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import OptimizedImage from '../../components/OptimizedImage.astro'
+import { getCatalogEvents } from '../../lib/queries'
+import { photoCountShort } from '../../lib/i18n'
+import { metaDescription } from '../../lib/seo'
+
+const events = await getCatalogEvents()
+
+const formatDate = (date: string | null, locale: string) =>
+  date ? new Date(`${date}T00:00:00`).toLocaleDateString(locale, {
+    year: 'numeric',
+    month: 'long',
+  }) : ''
+
+const description = metaDescription(
+  'Event photo catalog by Jesica Mariana.',
+  'Browse watermarked previews and order prints by photo code.'
+)
+---
+
+<Layout title="Events — Jesica Mariana" description={description}>
+  <section class="cat-head wrap" aria-labelledby="catalog-title">
+    <a class="cat-back" href="/" data-reveal>
+      <span aria-hidden="true">←</span> Series
+    </a>
+    <h1 class="cat-title" id="catalog-title" data-reveal style="--reveal-delay:0.08s">
+      <span data-lang-block="en">Events</span
+      ><span data-lang-block="es">Eventos</span>
+    </h1>
+    <p class="cat-lead" data-reveal style="--reveal-delay:0.16s">
+      <span data-lang-block="en"
+        >Photos from shot events, available to order. Previews are watermarked;
+        the file you receive is clean and full size.</span
+      ><span data-lang-block="es"
+        >Fotos de eventos, disponibles para pedir. Las vistas previas llevan
+        marca de agua; el archivo que recibís va limpio y en tamaño completo.</span
+      >
+    </p>
+  </section>
+
+  {
+    events.length === 0 ? (
+      <p class="cat-empty wrap" data-reveal>
+        <span data-lang-block="en">No events published yet.</span>
+        <span data-lang-block="es">Todavía no hay eventos publicados.</span>
+      </p>
+    ) : (
+      <div class="events wrap">
+        {events.map((ev, i) => {
+          const label = photoCountShort(ev.photoCount)
+          return (
+            <a
+              class="event"
+              href={`/eventos/${ev.slug}`}
+              data-reveal
+              style={`--reveal-delay:${(i % 3) * 0.09}s`}
+              aria-label={`${ev.titleEn} — ${label.en}`}
+            >
+              <div class="event__frame">
+                {ev.cover ? (
+                  <OptimizedImage
+                    image={ev.cover}
+                    alt={ev.cover.alt ?? ev.title}
+                    sizes="(max-width: 720px) 92vw, (max-width: 1100px) 46vw, 31vw"
+                    class="event__img"
+                  />
+                ) : (
+                  <div class="event__empty" aria-hidden="true" />
+                )}
+              </div>
+              <div class="event__meta">
+                <h2 class="event__title">
+                  <span data-lang-block="en">{ev.titleEn}</span
+                  ><span data-lang-block="es">{ev.title}</span>
+                </h2>
+                <span class="event__count">
+                  <span data-lang-block="en">{label.en}</span
+                  ><span data-lang-block="es">{label.es}</span>
+                </span>
+                {ev.date && (
+                  <span class="event__date">
+                    <span data-lang-block="en">{formatDate(ev.date, 'en-US')}</span
+                    ><span data-lang-block="es">{formatDate(ev.date, 'es-AR')}</span>
+                  </span>
+                )}
+              </div>
+            </a>
+          )
+        })}
+      </div>
+    )
+  }
+</Layout>
+
+<style>
+  .cat-head {
+    padding-top: clamp(2rem, 5vw, 4.5rem);
+    padding-bottom: clamp(2rem, 5vw, 3rem);
+  }
+  .cat-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    transition: color 0.3s var(--ease);
+  }
+  .cat-back:hover {
+    color: var(--accent);
+  }
+  .cat-title {
+    font-size: var(--step-6);
+    font-weight: 340;
+    margin: clamp(1rem, 3vw, 2rem) 0 clamp(1rem, 2vw, 1.5rem);
+    line-height: 0.95;
+  }
+  .cat-lead {
+    max-width: 48ch;
+    font-size: var(--step--1);
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  .cat-empty {
+    color: var(--text-dim);
+    font-size: var(--step-1);
+    padding-block: 4rem;
+  }
+
+  .events {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(2rem, 4vw, 3rem);
+    padding-bottom: clamp(3rem, 8vw, 6rem);
+  }
+  @media (min-width: 720px) {
+    .events {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1100px) {
+    .events {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .event {
+    display: block;
+    color: inherit;
+  }
+  .event__frame {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .event__empty {
+    aspect-ratio: 4 / 5;
+    background: repeating-linear-gradient(
+      45deg,
+      var(--surface),
+      var(--surface) 12px,
+      var(--surface-2) 12px,
+      var(--surface-2) 24px
+    );
+  }
+  .event :global(.event__img) {
+    aspect-ratio: 4 / 5;
+    transition: transform 0.9s var(--ease-out), filter 0.6s var(--ease);
+    filter: saturate(0.92);
+  }
+  .event:hover :global(.event__img),
+  .event:focus-visible :global(.event__img) {
+    transform: scale(1.045);
+    filter: saturate(1.05);
+  }
+
+  .event__meta {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 0.4rem 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    margin-top: 0.9rem;
+  }
+  .event__title {
+    font-size: var(--step-2);
+    font-weight: 400;
+    grid-row: 1;
+    transition: color 0.3s var(--ease);
+  }
+  .event:hover .event__title {
+    color: var(--accent-bright);
+  }
+  .event__count {
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    font-size: var(--step--1);
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .event__date {
+    grid-column: 1 / -1;
+    font-size: var(--step--1);
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-transform: capitalize;
+  }
+</style>

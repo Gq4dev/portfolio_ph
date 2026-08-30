@@ -13,6 +13,7 @@ dist/
 
 # heavy sample images (will be uploaded to a CMS later)
 FOTOS/
+FOTOS-marcadas/
 
 # OS cruft
 Thumbs.db

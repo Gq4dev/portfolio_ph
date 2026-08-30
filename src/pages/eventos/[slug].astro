@@ -1,0 +1,265 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import OptimizedImage from '../../components/OptimizedImage.astro'
+import { getCatalogEvents, getCatalogEvent, getSiteSettings } from '../../lib/queries'
+import { photoCount } from '../../lib/i18n'
+import { metaDescription } from '../../lib/seo'
+import type { GetStaticPaths } from 'astro'
+
+export const getStaticPaths = (async () => {
+  const events = await getCatalogEvents()
+  return events.map((e) => ({ params: { slug: e.slug } }))
+}) satisfies GetStaticPaths
+
+const { slug } = Astro.params
+const [event, settings] = await Promise.all([
+  getCatalogEvent(slug!),
+  getSiteSettings(),
+])
+
+if (!event) {
+  return Astro.redirect('/404')
+}
+
+const count = event.photos.length
+const label = photoCount(count)
+
+// Pre-filled order message per photo. Printing the code on the image is only
+// half the job — the link carries it so the client never types it wrong.
+const waNumber = settings.whatsapp.replace(/\D/g, '')
+const orderLink = (code: string) => {
+  const text = `Hola! Me interesa la foto ${code} del evento "${event.title}".`
+  return waNumber
+    ? `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`
+    : `mailto:${settings.email}?subject=${encodeURIComponent(`Foto ${code}`)}&body=${encodeURIComponent(text)}`
+}
+
+const items = event.photos.map((photo, i) => ({
+  photo,
+  code: photo.code,
+  href: orderLink(photo.code),
+  alt: photo.alt ?? `${event.titleEn} — ${photo.code}`,
+  index: i,
+}))
+
+const description = metaDescription(
+  `${event.titleEn} — photo catalog by Jesica Mariana.`,
+  count > 0 ? `${count} watermarked previews, order by photo code.` : null
+)
+---
+
+<Layout title={`${event.titleEn} — Jesica Mariana`} description={description}>
+  <section class="cat-head wrap" aria-labelledby="event-title">
+    <a class="cat-back" href="/eventos" data-reveal>
+      <span aria-hidden="true">←</span>
+      <span data-lang-block="en">Events</span
+      ><span data-lang-block="es">Eventos</span>
+    </a>
+    <h1 class="cat-title" id="event-title" data-reveal style="--reveal-delay:0.08s">
+      <span data-lang-block="en">{event.titleEn}</span
+      ><span data-lang-block="es">{event.title}</span>
+    </h1>
+    <p class="cat-meta" data-reveal style="--reveal-delay:0.16s">
+      <span class="cat-meta__num">01</span>
+      <span class="rule cat-meta__rule"></span>
+      <span>
+        <span data-lang-block="en">{label.en}</span
+        ><span data-lang-block="es">{label.es}</span>
+      </span>
+    </p>
+    <p class="cat-note" data-reveal style="--reveal-delay:0.24s">
+      <span data-lang-block="en"
+        >Previews are watermarked. Tap “Order” on the photo you want — its code
+        travels with the message, and the file you receive is clean and full
+        size.</span
+      ><span data-lang-block="es"
+        >Las vistas previas llevan marca de agua. Tocá “Pedir” en la foto que
+        querés — el código viaja con el mensaje, y el archivo que recibís va
+        limpio y en tamaño completo.</span
+      >
+    </p>
+  </section>
+
+  {
+    items.length === 0 ? (
+      <p class="cat-empty wrap" data-reveal>
+        <span data-lang-block="en">There are no photos in this event yet.</span>
+        <span data-lang-block="es">Todavía no hay fotos en este evento.</span>
+      </p>
+    ) : (
+      <div class="catalog wrap">
+        {items.map((it) => (
+          <article
+            class="lot"
+            data-reveal
+            style={`--reveal-delay:${(it.index % 3) * 0.08}s`}
+          >
+            <div class="lot__frame">
+              <OptimizedImage
+                image={it.photo}
+                alt={it.alt}
+                sizes="(max-width: 640px) 92vw, (max-width: 1000px) 46vw, 31vw"
+                eager={it.index < 3}
+                class="lot__img"
+              />
+            </div>
+            <div class="lot__meta">
+              <span class="lot__code">{it.code}</span>
+              <a
+                class="lot__cta"
+                href={it.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Pedir la foto ${it.code}`}
+              >
+                <span data-lang-block="en">Order →</span
+                ><span data-lang-block="es">Pedir →</span>
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+    )
+  }
+</Layout>
+
+<style>
+  .cat-head {
+    padding-top: clamp(2rem, 5vw, 4.5rem);
+    padding-bottom: clamp(2rem, 5vw, 3rem);
+  }
+  .cat-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    transition: color 0.3s var(--ease);
+  }
+  .cat-back:hover {
+    color: var(--accent);
+  }
+  .cat-title {
+    font-size: var(--step-6);
+    font-weight: 340;
+    margin: clamp(1rem, 3vw, 2rem) 0 clamp(1rem, 2vw, 1.5rem);
+    line-height: 0.95;
+  }
+  .cat-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .cat-meta__num {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .cat-meta__rule {
+    display: block;
+    width: clamp(2rem, 10vw, 6rem);
+    height: 1px;
+    background: var(--line);
+  }
+  .cat-note {
+    max-width: 48ch;
+    margin-top: clamp(1.2rem, 3vw, 2rem);
+    font-size: var(--step--1);
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  .cat-empty {
+    color: var(--text-dim);
+    font-size: var(--step-1);
+    padding-block: 4rem;
+  }
+
+  /* Uniform grid, not masonry: in a catalog the code must sit in a
+     predictable spot so the eye scans codes, not compositions. */
+  .catalog {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    padding-bottom: clamp(3rem, 8vw, 6rem);
+  }
+  @media (min-width: 640px) {
+    .catalog {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1000px) {
+    .catalog {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .lot__frame {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .lot :global(.lot__img) {
+    aspect-ratio: 4 / 5;
+    transition: transform 0.9s var(--ease-out);
+  }
+  .lot :global(.lot__img img) {
+    /* Blocks drag-to-desktop. Friction, not protection — the burnt-in
+       watermark is what actually defends the work. */
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  .lot:hover :global(.lot__img) {
+    transform: scale(1.03);
+  }
+
+  .lot__meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.85rem;
+    margin-top: 0.85rem;
+    border-top: 1px solid var(--line);
+  }
+  .lot__code {
+    font-size: var(--step-0);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    color: var(--text);
+  }
+  .lot__cta {
+    font-size: var(--step--1);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    transition: color 0.3s var(--ease);
+  }
+  .lot__cta:hover {
+    color: var(--accent-bright);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lot :global(.lot__img) {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Right-click "Save image as" is the laziest grab. Blocking it is a speed
+  // bump, nothing more; the watermark is the real defense.
+  function guardCatalogImages() {
+    document
+      .querySelectorAll<HTMLImageElement>('.lot__img img')
+      .forEach((img) => {
+        img.addEventListener('contextmenu', (e) => e.preventDefault())
+      })
+  }
+  guardCatalogImages()
+  document.addEventListener('astro:page-load', guardCatalogImages)
+</script>

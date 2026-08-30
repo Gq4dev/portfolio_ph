@@ -191,3 +191,86 @@ export async function getAbout(): Promise<About | null> {
     bioEn,
   }
 }
+
+/* ------------------------------------------------------------------
+   Sales catalog (events)
+
+   Photos here are the WATERMARKED exports produced by
+   scripts/watermark.mjs — the originals are never uploaded to the CMS.
+   Each one carries the code burnt into the image so the client can quote
+   it back when ordering.
+------------------------------------------------------------------ */
+
+export interface CatalogPhoto extends SanityImage {
+  code: string
+}
+
+export interface CatalogEventSummary {
+  title: string
+  titleEn: string
+  slug: string
+  date: string | null
+  photoCount: number
+  cover: SanityImage | null
+}
+
+export interface CatalogEventDetail {
+  title: string
+  titleEn: string
+  slug: string
+  date: string | null
+  photos: CatalogPhoto[]
+}
+
+// Only published events reach the site — `published` defaults to false so a
+// catalog can be assembled over several sessions without leaking half of it.
+const EVENTS_QUERY = `
+*[_type == "event" && published == true] | order(coalesce(date, "1900-01-01") desc, title asc) {
+  title,
+  titleEn,
+  "slug": slug.current,
+  date,
+  "photoCount": count(photos),
+  "cover": coalesce(coverImage, photos[0]) {
+    ...,
+    "alt": coalesce(alt, ^.coverImage.alt, ^.title),
+    "metadata": asset->metadata { lqip, dimensions }
+  }
+}`
+
+const EVENT_BY_SLUG_QUERY = `
+*[_type == "event" && slug.current == $slug && published == true][0] {
+  title,
+  titleEn,
+  "slug": slug.current,
+  date,
+  "photos": photos[] {
+    ...,
+    "alt": coalesce(alt, ^.title),
+    "metadata": asset->metadata { lqip, dimensions }
+  }
+}`
+
+export async function getCatalogEvents(): Promise<CatalogEventSummary[]> {
+  const data = await sanityClient.fetch<CatalogEventSummary[]>(EVENTS_QUERY)
+  return (data ?? [])
+    .filter((e) => e && e.slug && e.title)
+    .map((e) => ({ ...e, titleEn: e.titleEn || e.title }))
+}
+
+export async function getCatalogEvent(
+  slug: string
+): Promise<CatalogEventDetail | null> {
+  const data = await sanityClient.fetch<CatalogEventDetail | null>(
+    EVENT_BY_SLUG_QUERY,
+    { slug }
+  )
+  if (!data) return null
+  return {
+    ...data,
+    titleEn: data.titleEn || data.title,
+    // A photo without an asset or without its code is unusable in a catalog:
+    // the code IS the ordering key, so drop it rather than render a dead card.
+    photos: (data.photos ?? []).filter((p) => p?.asset && p?.code),
+  }
+}

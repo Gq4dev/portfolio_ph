@@ -5,7 +5,7 @@ import '@fontsource/space-grotesk/500.css'
 import '@fontsource/space-grotesk/700.css'
 import '../styles/global.css'
 import { ClientRouter } from 'astro:transitions'
-import { getSiteSettings, getCategories } from '../lib/queries'
+import { getSiteSettings, getCategories, getCatalogEvents } from '../lib/queries'
 import { urlFor } from '../lib/image'
 
 interface Props {
@@ -18,10 +18,15 @@ interface Props {
 
 const { title, description, preloadSrcset, preloadSizes } = Astro.props
 
-const [settings, categories] = await Promise.all([
+const [settings, categories, catalogEvents] = await Promise.all([
   getSiteSettings(),
   getCategories(),
+  getCatalogEvents(),
 ])
+
+// The catalog link only appears once there is something to sell — otherwise
+// it would send visitors to an empty page.
+const hasCatalog = catalogEvents.length > 0
 
 const brand = settings.title
 const metaDescription =
@@ -155,6 +160,16 @@ const umamiId = import.meta.env.PUBLIC_UMAMI_ID || ''
                     </li>
                   ))}
                 </ul>
+              </li>
+            )
+          }
+          {
+            hasCatalog && (
+              <li>
+                <a href="/eventos">
+                  <span data-lang-block="en">Events</span>
+                  <span data-lang-block="es">Eventos</span>
+                </a>
               </li>
             )
           }

@@ -33,6 +33,7 @@ export default defineConfig({
               .child(S.document().schemaType('about').documentId('about')),
             S.divider(),
             S.documentTypeListItem('category').title('Categorías'),
+            S.documentTypeListItem('event').title('Eventos'),
           ]),
     }),
     visionTool(),
