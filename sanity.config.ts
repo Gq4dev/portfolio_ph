@@ -2,6 +2,7 @@ import { defineConfig } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
 import { schemaTypes } from './src/sanity/schemaTypes'
+import { eventUploaderTool } from './src/sanity/tools'
 
 // Document types rendered as singletons in the structure (single editor, no create list).
 const singletonTypes = new Set(['siteSettings', 'about'])
@@ -36,6 +37,11 @@ export default defineConfig({
     }),
     visionTool(),
   ],
+
+  // Bulk upload without a terminal. Photos are watermarked in the browser and
+  // only the marked copy is uploaded, so the original never leaves the machine
+  // — and the Studio's own login is the access control.
+  tools: (prev) => [eventUploaderTool, ...prev],
 
   schema: {
     types: schemaTypes,

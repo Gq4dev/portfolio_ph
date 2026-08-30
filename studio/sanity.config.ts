@@ -1,6 +1,7 @@
 import { defineConfig } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
+import { eventUploaderTool } from '../src/sanity/tools'
 // Shared single source of truth — ./schemaTypes re-exports the schemas
 // defined at the Astro root (../src/sanity/schemaTypes).
 import { schemaTypes } from './schemaTypes'
@@ -38,6 +39,11 @@ export default defineConfig({
     }),
     visionTool(),
   ],
+
+  // Bulk upload without a terminal. Photos are watermarked in the browser and
+  // only the marked copy is uploaded, so the original never leaves the machine
+  // — and the Studio's own login is the access control.
+  tools: (prev) => [eventUploaderTool, ...prev],
 
   schema: {
     types: schemaTypes,
