@@ -3,10 +3,12 @@ import { defineType, defineField } from 'sanity'
 /**
  * Sales catalog for a shot event.
  *
- * Every photo carries a human-readable code because that code is burnt into
- * the watermarked preview: the client quotes it back to order the clean file.
- * Uploads here MUST be the watermarked exports produced by
- * `scripts/watermark.mjs` — the originals never reach the CMS.
+ * Every photo carries a human-readable code because that code is normally
+ * burnt into the watermarked preview: the client quotes it back to order the
+ * clean file. Uploads here MUST be downscaled exports — from
+ * `scripts/watermark.mjs` or from the "Subir evento" tool — never originals.
+ * The tool can skip the watermark for events that are a gallery rather than a
+ * catalog, but never skips the downscale.
  */
 export default defineType({
   name: 'event',
@@ -73,9 +75,9 @@ export default defineType({
     }),
     defineField({
       name: 'photos',
-      title: 'Fotos (con marca de agua)',
+      title: 'Fotos del catálogo',
       description:
-        'Subí SOLO los archivos exportados por scripts/watermark.mjs. El original nunca se sube.',
+        'Subí SOLO copias reducidas — las que genera “Subir evento” o scripts/watermark.mjs. El original nunca se sube.',
       type: 'array',
       of: [
         defineField({
