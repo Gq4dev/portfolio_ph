@@ -30,23 +30,25 @@
     <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M15 5l-7 7 7 7"/></svg>
   </button>
   <figure class="lightbox__stage">
-    <img class="lightbox__img" id="lightbox-img" src="" alt="" />
+    <div class="lightbox__frame">
+      <img class="lightbox__img" id="lightbox-img" src="" alt="" />
+      <div class="lightbox__order" id="lightbox-order" hidden>
+        <span class="lightbox__code" id="lightbox-code"></span>
+        <a
+          class="lightbox__cta"
+          id="lightbox-cta"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span data-lang-block="en">Order →</span
+          ><span data-lang-block="es">La quiero →</span>
+        </a>
+      </div>
+    </div>
     <figcaption class="lightbox__caption">
       <span id="lightbox-text"></span>
       <span class="lightbox__meta" id="lightbox-meta" hidden></span>
     </figcaption>
-    <div class="lightbox__order" id="lightbox-order" hidden>
-      <span class="lightbox__code" id="lightbox-code"></span>
-      <a
-        class="lightbox__cta"
-        id="lightbox-cta"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span data-lang-block="en">Order →</span
-        ><span data-lang-block="es">Pedir →</span>
-      </a>
-    </div>
   </figure>
   <button class="lightbox__nav lightbox__nav--next" type="button" data-lightbox-next aria-label="Foto siguiente">
     <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 5l7 7-7 7"/></svg>
@@ -90,18 +92,19 @@
     min-width: 0;
     height: 100%;
   }
+  .lightbox__frame {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+  }
   .lightbox__img {
     max-width: 100%;
-    max-height: 82vh;
+    max-height: 78vh;
     width: auto;
     height: auto;
     object-fit: contain;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
-  }
-  /* The order bar takes vertical room; give the image less of it so the CTA
-     never falls below the fold on short viewports. */
-  .lightbox.has-order .lightbox__img {
-    max-height: 68vh;
   }
   .lightbox__caption {
     display: flex;
@@ -119,19 +122,30 @@
     display: none;
   }
 
-  /* Order bar: code plus CTA, so the client can order the photo they are
-     actually looking at instead of going back to hunt for it in the grid. */
+  /* Order bar rides on the photo, same scrim as the catalog grid: the code
+     stays welded to the image it names, and the client orders what they are
+     actually looking at instead of hunting for it back in the grid. */
   .lightbox__order {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: clamp(1rem, 4vw, 2rem);
-    padding-top: 0.85rem;
-    border-top: 1px solid var(--lb-line);
+    padding: 2rem 0.8rem 0.6rem;
+    background: linear-gradient(
+      to top,
+      rgba(10, 10, 12, 0.88),
+      rgba(10, 10, 12, 0.55) 55%,
+      rgba(10, 10, 12, 0)
+    );
   }
   .lightbox__order[hidden] {
     display: none;
   }
   .lightbox__code {
+    padding-left: 0.3rem;
     font-size: var(--step-0);
     font-weight: 500;
     letter-spacing: 0.14em;
@@ -140,21 +154,19 @@
   .lightbox__cta {
     display: inline-flex;
     align-items: center;
-    padding: 0.5rem 1.1rem;
+    /* Same reasoning as the grid CTA: comfortable thumb target, not a
+       hairline of text. */
+    min-height: 2.9rem;
+    padding: 0 1.2rem;
     font-size: var(--step--1);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--lb-fg);
-    border: 1px solid var(--lb-line);
-    border-radius: 999px;
-    transition: color 0.25s var(--ease), border-color 0.25s var(--ease),
-      background 0.25s var(--ease);
+    transition: color 0.25s var(--ease);
   }
   .lightbox__cta:hover,
   .lightbox__cta:focus-visible {
     color: var(--accent-bright);
-    border-color: var(--accent-bright);
-    background: rgba(255, 255, 255, 0.06);
   }
 
   .lightbox__close {
@@ -281,11 +293,10 @@
       if (orderEl && codeEl && ctaEl) {
         const hasOrder = Boolean(s.order)
         orderEl.hidden = !hasOrder
-        box.classList.toggle('has-order', hasOrder)
         codeEl.textContent = s.code
         if (hasOrder) {
           ctaEl.href = s.order
-          ctaEl.setAttribute('aria-label', `Pedir la foto ${s.code}`)
+          ctaEl.setAttribute('aria-label', `La quiero — foto ${s.code}`)
         } else {
           ctaEl.removeAttribute('href')
         }
