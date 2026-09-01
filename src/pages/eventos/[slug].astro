@@ -1,7 +1,9 @@
 ---
 import Layout from '../../layouts/Layout.astro'
 import OptimizedImage from '../../components/OptimizedImage.astro'
+import Lightbox from '../../components/Lightbox.astro'
 import { getCatalogEvents, getCatalogEvent, getSiteSettings } from '../../lib/queries'
+import { urlFor } from '../../lib/image'
 import { photoCount } from '../../lib/i18n'
 import { metaDescription } from '../../lib/seo'
 import type { GetStaticPaths } from 'astro'
@@ -34,10 +36,12 @@ const orderLink = (code: string) => {
     : `mailto:${settings.email}?subject=${encodeURIComponent(`Foto ${code}`)}&body=${encodeURIComponent(text)}`
 }
 
+// The large viewer URL is precomputed server-side (no urlFor on the client).
 const items = event.photos.map((photo, i) => ({
   photo,
   code: photo.code,
   href: orderLink(photo.code),
+  full: urlFor(photo).width(2000).auto('format').quality(85).url(),
   alt: photo.alt ?? `${event.titleEn} — ${photo.code}`,
   index: i,
 }))
@@ -69,13 +73,14 @@ const description = metaDescription(
     </p>
     <p class="cat-note" data-reveal style="--reveal-delay:0.24s">
       <span data-lang-block="en"
-        >Previews are watermarked. Tap “Order” on the photo you want — its code
-        travels with the message, and the file you receive is clean and full
-        size.</span
+        >Previews are watermarked. Tap a photo to open the viewer and browse the
+        whole event, then hit “Order” on the one you want — its code travels
+        with the message, and the file you receive is clean and full size.</span
       ><span data-lang-block="es"
-        >Las vistas previas llevan marca de agua. Tocá “Pedir” en la foto que
-        querés — el código viaja con el mensaje, y el archivo que recibís va
-        limpio y en tamaño completo.</span
+        >Las vistas previas llevan marca de agua. Tocá una foto para abrir el
+        visor y recorrer todo el evento, y después “Pedir” en la que querés —
+        el código viaja con el mensaje, y el archivo que recibís va limpio y en
+        tamaño completo.</span
       >
     </p>
   </section>
@@ -94,7 +99,18 @@ const description = metaDescription(
             data-reveal
             style={`--reveal-delay:${(it.index % 3) * 0.08}s`}
           >
-            <div class="lot__frame">
+            <button
+              class="lot__frame"
+              type="button"
+              data-lightbox-open
+              data-index={it.index}
+              data-full={it.full}
+              data-alt={it.alt}
+              data-code={it.code}
+              data-order={it.href}
+              data-protected
+              aria-label={`Ampliar la foto ${it.code}`}
+            >
               <OptimizedImage
                 image={it.photo}
                 alt={it.alt}
@@ -102,7 +118,7 @@ const description = metaDescription(
                 eager={it.index < 3}
                 class="lot__img"
               />
-            </div>
+            </button>
             <div class="lot__meta">
               <span class="lot__code">{it.code}</span>
               <a
@@ -121,6 +137,8 @@ const description = metaDescription(
       </div>
     )
   }
+
+  <Lightbox />
 </Layout>
 
 <style>
@@ -199,9 +217,13 @@ const description = metaDescription(
   }
 
   .lot__frame {
+    display: block;
     position: relative;
+    width: 100%;
+    padding: 0;
     overflow: hidden;
     background: var(--surface);
+    cursor: zoom-in;
   }
   .lot :global(.lot__img) {
     aspect-ratio: 4 / 5;
@@ -213,7 +235,8 @@ const description = metaDescription(
     -webkit-user-drag: none;
     user-select: none;
   }
-  .lot:hover :global(.lot__img) {
+  .lot:hover :global(.lot__img),
+  .lot__frame:focus-visible :global(.lot__img) {
     transform: scale(1.03);
   }
 
