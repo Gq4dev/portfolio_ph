@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro'
 import OptimizedImage from '../../components/OptimizedImage.astro'
 import Lightbox from '../../components/Lightbox.astro'
 import { getCatalogEvents, getCatalogEvent, getSiteSettings } from '../../lib/queries'
-import { urlFor } from '../../lib/image'
+import { imageRatio, justifiedSizes, viewerSources } from '../../lib/image'
 import { photoCount } from '../../lib/i18n'
 import { metaDescription } from '../../lib/seo'
 import type { GetStaticPaths } from 'astro'
@@ -36,15 +36,28 @@ const orderLink = (code: string) => {
     : `mailto:${settings.email}?subject=${encodeURIComponent(`Foto ${code}`)}&body=${encodeURIComponent(text)}`
 }
 
-// The large viewer URL is precomputed server-side (no urlFor on the client).
-const items = event.photos.map((photo, i) => ({
-  photo,
-  code: photo.code,
-  href: orderLink(photo.code),
-  full: urlFor(photo).width(2000).auto('format').quality(85).url(),
-  alt: photo.alt ?? `${event.titleEn} — ${photo.code}`,
-  index: i,
-}))
+// Target row height per breakpoint. These are the only numbers that decide how
+// dense the sheet is; they must stay in sync with --cat-row in the CSS below,
+// because they are also what sizes= is derived from.
+const ROW_H = { sm: 108, md: 150, lg: 210 }
+
+// The viewer URLs are precomputed server-side (no urlFor on the client).
+const items = event.photos.map((photo, i) => {
+  // Natural ratio drives the justified row: no crop, so a portrait stays a
+  // portrait.
+  const ratio = imageRatio(photo)
+  const view = viewerSources(photo)
+  return {
+    photo,
+    code: photo.code,
+    ratio,
+    href: orderLink(photo.code),
+    view,
+    alt: photo.alt ?? `${event.titleEn} — ${photo.code}`,
+    sizes: justifiedSizes(ratio, ROW_H),
+    index: i,
+  }
+})
 
 const description = metaDescription(
   `${event.titleEn} — photo catalog by Jesica Mariana.`,
@@ -97,14 +110,16 @@ const description = metaDescription(
           <article
             class="lot"
             data-reveal
-            style={`--reveal-delay:${(it.index % 3) * 0.08}s`}
+            style={`--r:${it.ratio.toFixed(4)};--reveal-delay:${(it.index % 4) * 0.05}s`}
           >
             <button
               class="lot__frame"
               type="button"
               data-lightbox-open
               data-index={it.index}
-              data-full={it.full}
+              data-full={it.view.src}
+              data-full-srcset={it.view.srcset}
+              data-full-sizes={it.view.sizes}
               data-alt={it.alt}
               data-code={it.code}
               data-order={it.href}
@@ -114,24 +129,13 @@ const description = metaDescription(
               <OptimizedImage
                 image={it.photo}
                 alt={it.alt}
-                sizes="(max-width: 640px) 92vw, (max-width: 1000px) 46vw, 31vw"
-                eager={it.index < 3}
+                sizes={it.sizes}
+                ratio={it.ratio}
+                eager={it.index < 4}
                 class="lot__img"
               />
             </button>
-            <div class="lot__bar">
-              <span class="lot__code" aria-hidden="true">{it.code}</span>
-              <a
-                class="lot__cta"
-                href={it.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`La quiero — foto ${it.code}`}
-              >
-                <span data-lang-block="en">Order →</span
-                ><span data-lang-block="es">La quiero →</span>
-              </a>
-            </div>
+            <span class="lot__code" aria-hidden="true">{it.code}</span>
           </article>
         ))}
       </div>
@@ -197,28 +201,49 @@ const description = metaDescription(
     padding-block: 4rem;
   }
 
-  /* Uniform grid, not masonry: in a catalog the code must sit in a
-     predictable spot so the eye scans codes, not compositions. */
+  /* Justified rows, not a uniform grid. Each row lands on one height and the
+     widths follow each photo's real ratio, so nothing is cropped and a phone
+     fits four across instead of one — in a 200-photo event, finding yourself
+     is the whole job, and one-per-screen made that a scrolling contest.
+
+     No layout JS and no shift: --r is Sanity's stored ratio, printed
+     server-side, and the packing is plain flexbox. Inside a row every item
+     gets flex-basis AND flex-grow proportional to its ratio, so the leftover
+     space is shared in the same proportion, every width scales by one common
+     factor, and the heights therefore match exactly.
+
+     --cat-row and ROW_H in the frontmatter are the same number in two places:
+     sizes= is derived from it. Change both or the browser picks wrong. */
   .catalog {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: clamp(2.75rem, 9vw, 3.5rem);
+    --cat-row: 108px;
+    --cat-gap: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cat-gap);
     padding-bottom: clamp(3rem, 8vw, 6rem);
+  }
+  /* Eats the slack in the final row. Without it the last one or two photos
+     stretch the full width and read as a feature rather than a remainder. */
+  .catalog::after {
+    content: '';
+    flex: 99999 1 0;
   }
   @media (min-width: 640px) {
     .catalog {
-      grid-template-columns: repeat(2, 1fr);
-      gap: clamp(1.5rem, 3vw, 2.5rem);
+      --cat-row: 150px;
+      --cat-gap: 6px;
     }
   }
   @media (min-width: 1000px) {
     .catalog {
-      grid-template-columns: repeat(3, 1fr);
+      --cat-row: 210px;
+      --cat-gap: 8px;
     }
   }
 
   .lot {
     position: relative;
+    flex: var(--r) 1 calc(var(--r) * var(--cat-row));
   }
   .lot__frame {
     display: block;
@@ -229,8 +254,9 @@ const description = metaDescription(
     background: var(--surface);
     cursor: zoom-in;
   }
+  /* No forced ratio here any more: OptimizedImage gets the real one via its
+     ratio prop, which is what keeps the row heights honest. */
   .lot :global(.lot__img) {
-    aspect-ratio: 4 / 5;
     transition: transform 0.9s var(--ease-out);
   }
   .lot :global(.lot__img img) {
@@ -244,55 +270,41 @@ const description = metaDescription(
     transform: scale(1.03);
   }
 
-  /* Code and CTA ride on the photo. As a caption row below, the code sat as
-     close to the next photo as to its own and clients ordered the wrong
-     frame; on the image the pairing is unambiguous. One scrim serves both,
-     and it stays click-through so the frame underneath still opens. */
-  .lot__bar {
+  /* The code still rides on its own photo — the pairing that commit 2c9b268
+     fixed is untouched. What is gone is the order CTA: at four-up there is no
+     room for a 44px tap target that is not also covering a face, so ordering
+     now lives in the viewer, where exactly one photo is on screen and the
+     code beside the button is unambiguous by construction.
+
+     Below 640px the chip is hidden too. At ~85px wide the code would be
+     unreadable and the sheet is for hunting faces, not reading codes; the
+     viewer names the photo the moment it opens. The button's aria-label
+     carries the code at every size, so this is a visual cut, not a
+     structural one. */
+  .lot__code {
+    display: none;
     position: absolute;
-    inset-inline: 0;
+    left: 0;
     bottom: 0;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    /* Horizontal padding lives on the children so the CTA's tap target can
-       run all the way to the edge of the frame. */
-    padding: 1.7rem 0.7rem 0.55rem;
+    /* Sits over the image but never intercepts the tap: the whole tile has to
+       stay one target that opens the viewer. */
     pointer-events: none;
+    padding: 1.1rem 0.6rem 0.4rem 0.55rem;
+    font-size: var(--step--2);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: #f4efe7;
     background: linear-gradient(
-      to top,
-      rgba(10, 10, 12, 0.88),
-      rgba(10, 10, 12, 0.55) 55%,
+      to top right,
+      rgba(10, 10, 12, 0.8),
       rgba(10, 10, 12, 0)
     );
   }
-  .lot__code {
-    padding-left: 0.25rem;
-    font-size: var(--step--1);
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    color: #f4efe7;
-  }
-  .lot__cta {
-    /* Only the link takes clicks; the rest of the scrim lets them through.
-       A bare text link is a miserable touch target sitting on top of a
-       full-bleed image button — pad it out past the 44px thumb minimum. */
-    pointer-events: auto;
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.9rem;
-    padding: 0 1.1rem;
-    font-size: var(--step--1);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #f4efe7;
-    transition: color 0.3s var(--ease);
-  }
-  .lot__cta:hover,
-  .lot__cta:focus-visible {
-    color: var(--accent-bright);
+  @media (min-width: 640px) {
+    .lot__code {
+      display: block;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

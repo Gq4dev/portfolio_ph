@@ -105,6 +105,19 @@
     height: auto;
     object-fit: contain;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    transition: filter 0.3s var(--ease);
+  }
+  /* While the grid thumbnail stands in for the full size, blur it: an upscaled
+     preview reads as "arriving" instead of as a soft photo, and it also stops
+     anyone mistaking the stand-in for the file they are about to order. It is
+     the same frame either way, so the code beside it is never wrong. */
+  .lightbox__img.is-bridging {
+    filter: blur(10px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lightbox__img {
+      transition: none;
+    }
   }
   .lightbox__caption {
     display: flex;
@@ -236,6 +249,8 @@
 <script>
   interface Slide {
     full: string
+    srcset: string
+    sizes: string
     alt: string
     caption: string
     capture: string
@@ -264,6 +279,10 @@
 
     const slides: Slide[] = triggers.map((t) => ({
       full: t.dataset.full || '',
+      // Optional: a page that offers no srcset still works, it just always
+      // serves the 2000px file.
+      srcset: t.dataset.fullSrcset || '',
+      sizes: t.dataset.fullSizes || '',
       alt: t.dataset.alt || '',
       caption: t.dataset.caption || '',
       capture: t.dataset.capture || '',
@@ -277,10 +296,87 @@
     let current = 0
     let lastFocused: HTMLElement | null = null
 
+    // Neighbours are fetched as soon as you land, so by the time you actually
+    // move they are in the HTTP cache and the swap is instant.
+    const warm = new Map<string, HTMLImageElement>()
+    const WARM_MAX = 12
+
+    const preload = (i: number) => {
+      const s = slides[(i + slides.length) % slides.length]
+      if (!s?.full || warm.has(s.full)) return
+      const im = new Image()
+      im.decoding = 'async'
+      // Must mirror what render() will ask for, or the browser warms one
+      // candidate and then fetches a different one — a preload that costs
+      // bandwidth and saves nothing.
+      if (s.sizes) im.sizes = s.sizes
+      if (s.srcset) im.srcset = s.srcset
+      im.src = s.full
+      warm.set(s.full, im)
+      // A 200-photo event would otherwise pin every full-size decode in
+      // memory. Keep a short trailing window and drop the oldest.
+      if (warm.size > WARM_MAX) {
+        const oldest = warm.keys().next().value
+        if (oldest) warm.delete(oldest)
+      }
+    }
+
+    /**
+     * Show the slide's photo immediately, at whatever resolution is already
+     * available, and upgrade it in place.
+     *
+     * The grid has already downloaded and decoded a thumbnail of this exact
+     * photo, so painting that costs nothing and is instant. Without it the
+     * <img> kept showing the PREVIOUS photo while a cold full-size request
+     * ran — and because the code and caption update synchronously, the viewer
+     * briefly showed one photo's code beside another photo's image. That is
+     * the wrong-photo-ordered confusion the grid layout was fixed for, arriving
+     * here through timing instead. The bridge is the same frame, so the numbers
+     * beside it are true from the first paint.
+     */
+    const paintBridged = (s: Slide) => {
+      const applyFull = () => {
+        img.sizes = s.sizes
+        img.srcset = s.srcset
+        img.src = s.full
+        img.classList.remove('is-bridging')
+      }
+      const showFull = () => {
+        // Guard against a fast swiper: this callback may resolve after the
+        // reader has already moved on.
+        if (slides[current] !== s) return
+        applyFull()
+      }
+
+      const thumb = s.trigger.querySelector('img')
+      const bridge = thumb?.currentSrc || thumb?.src || ''
+      if (!bridge || bridge === s.full) {
+        applyFull()
+        return
+      }
+
+      // srcset outranks src, so it has to be cleared first — otherwise the
+      // browser keeps resolving against the old candidate list and the
+      // thumbnail never paints.
+      img.srcset = ''
+      img.sizes = ''
+      img.src = bridge
+      img.classList.add('is-bridging')
+
+      const full = new Image()
+      full.decoding = 'async'
+      if (s.sizes) full.sizes = s.sizes
+      if (s.srcset) full.srcset = s.srcset
+      full.addEventListener('load', showFull)
+      full.src = s.full
+      if (full.complete && full.naturalWidth > 0) showFull()
+    }
+
     const render = () => {
       const s = slides[current]
       if (!s) return
-      img.src = s.full
+
+      paintBridged(s)
       img.alt = s.alt
       // Friction against the lazy grab, same as in the catalog grid — the
       // burnt-in watermark is what actually defends the work.
@@ -301,6 +397,11 @@
           ctaEl.removeAttribute('href')
         }
       }
+
+      // Warm both directions: people browse a catalog backwards as often as
+      // forwards, hunting for the frame they just scrolled past.
+      preload(current + 1)
+      preload(current - 1)
     }
 
     const open = (index: number) => {

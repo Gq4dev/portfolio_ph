@@ -1,7 +1,7 @@
 ---
 import OptimizedImage from './OptimizedImage.astro'
 import Lightbox from './Lightbox.astro'
-import { urlFor } from '../lib/image'
+import { imageRatio, justifiedSizes, viewerSources } from '../lib/image'
 import type { SanityImage } from '../lib/queries'
 
 interface Props {
@@ -11,16 +11,27 @@ interface Props {
 
 const { photos, title } = Astro.props
 
-// Precompute the large lightbox URL server-side (no urlFor on the client).
-const items = photos.map((photo, i) => ({
-  photo,
-  index: i,
-  num: String(i + 1).padStart(2, '0'),
-  full: urlFor(photo).width(2000).auto('format').quality(85).url(),
-  alt: photo.alt ?? title,
-  caption: photo.caption ?? '',
-  capture: photo.captureInfo ?? '',
-}))
+// Same justified-row geometry as the event catalog, with taller rows: a series
+// is there to be looked at, not searched, so each photo gets more room while
+// the phone still shows several at once. Keep in sync with --gal-row below —
+// sizes= is derived from these numbers.
+const ROW_H = { sm: 108, md: 170, lg: 240 }
+
+// Precompute the viewer URLs server-side (no urlFor on the client).
+const items = photos.map((photo, i) => {
+  const ratio = imageRatio(photo)
+  return {
+    photo,
+    index: i,
+    num: String(i + 1).padStart(2, '0'),
+    ratio,
+    view: viewerSources(photo),
+    alt: photo.alt ?? title,
+    caption: photo.caption ?? '',
+    capture: photo.captureInfo ?? '',
+    sizes: justifiedSizes(ratio, ROW_H),
+  }
+})
 ---
 
 {
@@ -37,18 +48,22 @@ const items = photos.map((photo, i) => ({
           type="button"
           data-lightbox-open
           data-index={it.index}
-          data-full={it.full}
+          data-full={it.view.src}
+          data-full-srcset={it.view.srcset}
+          data-full-sizes={it.view.sizes}
           data-alt={it.alt}
           data-caption={it.caption}
           data-capture={it.capture}
           data-reveal
-          style={`--reveal-delay:${(it.index % 3) * 0.08}s`}
+          style={`--r:${it.ratio.toFixed(4)};--reveal-delay:${(it.index % 4) * 0.05}s`}
           aria-label={`Ampliar foto ${it.num}: ${it.alt}`}
         >
           <OptimizedImage
             image={it.photo}
             alt={it.alt}
-            sizes="(max-width: 640px) 92vw, (max-width: 1000px) 46vw, 30vw"
+            sizes={it.sizes}
+            ratio={it.ratio}
+            eager={it.index < 4}
             class="shot__img"
           />
           <span class="shot__cap" aria-hidden="true">
@@ -69,36 +84,45 @@ const items = photos.map((photo, i) => ({
     padding-block: 4rem;
   }
 
-  /* Masonry via CSS columns — organic, editorial, no rigid rows. */
+  /* Justified rows, same geometry as the event catalog: --r is the photo's
+     real ratio, and matching flex-basis/flex-grow make every item in a row
+     scale by one factor, so the heights line up on their own. Column masonry
+     went one-per-screen on a phone and ordered photos down a column instead
+     of across, which read as unrelated strips rather than a series. */
   .gallery {
-    column-count: 1;
-    column-gap: clamp(1rem, 2vw, 2rem);
+    --gal-row: 108px;
+    --gal-gap: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gal-gap);
+  }
+  /* Absorbs the slack so the final photo is not stretched into a feature. */
+  .gallery::after {
+    content: '';
+    flex: 99999 1 0;
   }
   @media (min-width: 640px) {
     .gallery {
-      column-count: 2;
+      --gal-row: 170px;
+      --gal-gap: 6px;
     }
   }
   @media (min-width: 1000px) {
     .gallery {
-      column-count: 3;
+      --gal-row: 240px;
+      --gal-gap: 8px;
     }
   }
 
   .shot {
     display: block;
     position: relative;
-    width: 100%;
+    flex: var(--r) 1 calc(var(--r) * var(--gal-row));
     padding: 0;
-    margin: 0 0 clamp(1rem, 2vw, 2rem);
-    break-inside: avoid;
+    margin: 0;
     overflow: hidden;
     background: var(--surface);
     text-align: left;
-  }
-  /* Editorial off-grid nudge: lift every 3rd shot. */
-  .shot:nth-child(3n) {
-    margin-top: clamp(0.5rem, 3vw, 2.5rem);
   }
 
   .shot :global(.shot__img) {
@@ -111,8 +135,11 @@ const items = photos.map((photo, i) => ({
     filter: saturate(1.05) brightness(1);
   }
 
-  /* Hover: reveal caption/title over the image. */
+  /* Hover: reveal caption/title over the image. Hidden at the densest
+     breakpoint — the tiles are too small to read a caption on, and a touch
+     device can leave :hover stuck on the last photo tapped. */
   .shot__cap {
+    display: none;
     position: absolute;
     left: 0;
     right: 0;
@@ -130,6 +157,11 @@ const items = photos.map((photo, i) => ({
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+  }
+  @media (min-width: 640px) {
+    .shot__cap {
+      display: block;
+    }
   }
   .shot:hover .shot__cap,
   .shot:focus-visible .shot__cap {
