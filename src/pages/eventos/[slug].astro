@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro'
 import OptimizedImage from '../../components/OptimizedImage.astro'
 import Lightbox from '../../components/Lightbox.astro'
+import Cart from '../../components/Cart.astro'
 import { getCatalogEvents, getCatalogEvent, getSiteSettings } from '../../lib/queries'
 import { imageRatio, justifiedSizes, viewerSources } from '../../lib/image'
 import { photoCount } from '../../lib/i18n'
@@ -26,16 +27,6 @@ if (!event) {
 const count = event.photos.length
 const label = photoCount(count)
 
-// Pre-filled order message per photo. Printing the code on the image is only
-// half the job — the link carries it so the client never types it wrong.
-const waNumber = settings.whatsapp.replace(/\D/g, '')
-const orderLink = (code: string) => {
-  const text = `Hola! Me interesa la foto ${code} del evento "${event.title}".`
-  return waNumber
-    ? `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`
-    : `mailto:${settings.email}?subject=${encodeURIComponent(`Foto ${code}`)}&body=${encodeURIComponent(text)}`
-}
-
 // Target row height per breakpoint. These are the only numbers that decide how
 // dense the sheet is; they must stay in sync with --cat-row in the CSS below,
 // because they are also what sizes= is derived from.
@@ -51,7 +42,6 @@ const items = event.photos.map((photo, i) => {
     photo,
     code: photo.code,
     ratio,
-    href: orderLink(photo.code),
     view,
     alt: photo.alt ?? `${event.titleEn} — ${photo.code}`,
     sizes: justifiedSizes(ratio, ROW_H),
@@ -86,14 +76,17 @@ const description = metaDescription(
     </p>
     <p class="cat-note" data-reveal style="--reveal-delay:0.24s">
       <span data-lang-block="en"
-        >Previews are watermarked. Tap a photo to open the viewer and browse the
-        whole event, then hit “Order” on the one you want — its code travels
-        with the message, and the file you receive is clean and full size.</span
+        >Previews are watermarked. Tap the cart icon on a photo to add it, or
+        tap the photo to open the viewer and browse the whole event. When you are done,
+        send the order from the cart — every code travels in one message, and
+        the files you receive are clean and full size.</span
       ><span data-lang-block="es"
-        >Las vistas previas llevan marca de agua. Tocá una foto para abrir el
-        visor y recorrer todo el evento, y después “La quiero” en la que querés —
-        el código viaja con el mensaje, y el archivo que recibís va limpio y en
-        tamaño completo.</span
+        >Las vistas previas llevan marca de agua. Tocá el ícono del carrito en
+        una foto para sumarla, o tocá la foto para abrir el visor y recorrer todo
+        el evento. Cuando
+        termines, enviá el pedido desde el carrito — todos los códigos viajan en
+        un solo mensaje, y los archivos que recibís van limpios y en tamaño
+        completo.</span
       >
     </p>
   </section>
@@ -122,7 +115,8 @@ const description = metaDescription(
               data-full-sizes={it.view.sizes}
               data-alt={it.alt}
               data-code={it.code}
-              data-order={it.href}
+              data-cart={event.slug}
+              data-event={event.title}
               data-protected
               aria-label={`Ampliar la foto ${it.code}`}
             >
@@ -136,6 +130,19 @@ const description = metaDescription(
               />
             </button>
             <span class="lot__code" aria-hidden="true">{it.code}</span>
+            <button
+              class="lot__pick"
+              type="button"
+              data-cart-pick
+              data-cart={event.slug}
+              data-event={event.title}
+              data-code={it.code}
+              data-alt={it.alt}
+              aria-pressed="false"
+              aria-label={`Agregar al carrito — foto ${it.code}`}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g class="lot__pick-cart" stroke-width="1.9"><path d="M2.5 4h2.6l2.3 10.4a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20.5 8H6"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></g><path class="lot__pick-plus" d="M12 6v12M6 12h12"/><path class="lot__pick-check" d="M5.5 12.5l4 4 9-9"/></svg>
+            </button>
           </article>
         ))}
       </div>
@@ -143,6 +150,7 @@ const description = metaDescription(
   }
 
   <Lightbox />
+  <Cart whatsapp={settings.whatsapp} email={settings.email} />
 </Layout>
 
 <style>
@@ -270,11 +278,77 @@ const description = metaDescription(
     transform: scale(1.03);
   }
 
+  /* Quick pick from the sheet, so choosing ten photos does not mean opening
+     the viewer ten times. It sits in the corner, where a face is least likely
+     to be, and stays small: the tile itself is still the target that opens
+     the viewer. The hit area is larger than the visible dot via padding. */
+  .lot__pick {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    color: #f4efe7;
+  }
+  /* Bare glyph, no badge: a shadow is what keeps it readable on a white
+     dress as well as on a night sky. */
+  .lot__pick svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85))
+      drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+    transition: color 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .lot__pick:hover svg,
+  .lot__pick:focus-visible svg {
+    transform: scale(1.12);
+  }
+  /* The one badge allowed: a filled check, so a picked tile reads at a
+     glance against the bare + of the others. */
+  .lot__pick[aria-pressed='true'] svg {
+    box-sizing: content-box;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0.25rem;
+    color: #f4efe7;
+    background: var(--accent);
+    border-radius: 50%;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+  }
+  /* Empty cart: every tile shows a cart, which says what the button is for.
+     Once something is picked the meaning is learned, so the rest switch to a
+     plain + and the picked ones to a check. */
+  .lot__pick-plus,
+  .lot__pick-check,
+  .catalog.has-picks .lot__pick-cart,
+  .catalog.has-picks .lot__pick[aria-pressed='true'] .lot__pick-plus {
+    display: none;
+  }
+  .catalog.has-picks .lot__pick[aria-pressed='false'] .lot__pick-plus,
+  .catalog.has-picks .lot__pick[aria-pressed='true'] .lot__pick-check {
+    display: inline;
+  }
+  /* Picked tiles get a warm veil plus a thick border: obvious when scanning
+     a full sheet, but the face underneath stays visible — a centred icon
+     would cover exactly the thing people are looking for. */
+  .lot__frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+    box-shadow: inset 0 0 0 4px var(--accent);
+    opacity: 0;
+    transition: opacity 0.25s var(--ease);
+  }
+  .lot.is-picked .lot__frame::after {
+    opacity: 1;
+  }
+
   /* The code still rides on its own photo — the pairing that commit 2c9b268
-     fixed is untouched. What is gone is the order CTA: at four-up there is no
-     room for a 44px tap target that is not also covering a face, so ordering
-     now lives in the viewer, where exactly one photo is on screen and the
-     code beside the button is unambiguous by construction.
+     fixed is untouched.
 
      Below 640px the chip is hidden too. At ~85px wide the code would be
      unreadable and the sheet is for hunting faces, not reading codes; the
@@ -315,6 +389,8 @@ const description = metaDescription(
 </style>
 
 <script>
+  import { getItems, hasItem, toggleItem } from '../../lib/cart'
+
   // Right-click "Save image as" is the laziest grab. Blocking it is a speed
   // bump, nothing more; the watermark is the real defense.
   function guardCatalogImages() {
@@ -326,4 +402,57 @@ const description = metaDescription(
   }
   guardCatalogImages()
   document.addEventListener('astro:page-load', guardCatalogImages)
+
+  // Corner pick buttons. They read the cart instead of tracking their own
+  // clicks, so a photo added or removed from the viewer or the cart panel
+  // shows the right state here too.
+  function initPicks() {
+    const picks = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[data-cart-pick]')
+    ).filter((b) => b.dataset.ready !== 'true')
+    if (!picks.length) return
+
+    const sync = () => {
+      // Any photo in the cart counts, even from another event: the visitor
+      // has already learned what the button does.
+      document
+        .querySelector('.catalog')
+        ?.classList.toggle('has-picks', getItems().length > 0)
+      document
+        .querySelectorAll<HTMLButtonElement>('[data-cart-pick]')
+        .forEach((b) => {
+          const code = b.dataset.code || ''
+          const inCart = hasItem(b.dataset.cart || '', code)
+          b.setAttribute('aria-pressed', String(inCart))
+          b.setAttribute(
+            'aria-label',
+            inCart ? `Quitar del carrito — foto ${code}` : `Agregar al carrito — foto ${code}`
+          )
+          b.closest('.lot')?.classList.toggle('is-picked', inCart)
+        })
+    }
+
+    picks.forEach((b) => {
+      b.dataset.ready = 'true'
+      b.addEventListener('click', () => {
+        const thumb = b.closest('.lot')?.querySelector('img')
+        toggleItem({
+          event: b.dataset.cart || '',
+          eventTitle: b.dataset.event || '',
+          code: b.dataset.code || '',
+          thumb: thumb?.currentSrc || thumb?.src || '',
+          alt: b.dataset.alt || '',
+        })
+      })
+    })
+
+    const ac = new AbortController()
+    document.addEventListener('cart:change', sync, { signal: ac.signal })
+    document.addEventListener('astro:before-swap', () => ac.abort(), {
+      once: true,
+    })
+    sync()
+  }
+  initPicks()
+  document.addEventListener('astro:page-load', initPicks)
 </script>

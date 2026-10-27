@@ -1,0 +1,393 @@
+---
+/**
+ * Site-wide photo cart, rendered on every event page and the event list.
+ *
+ * The viewer and the grid picks add photos (see lib/cart.ts); this component
+ * shows the running selection as thumbnails grouped by event and, on
+ * checkout, sends every code in one WhatsApp message (or an email when no
+ * number is configured).
+ */
+interface Props {
+  whatsapp: string
+  email: string
+}
+
+const { whatsapp, email } = Astro.props
+const waNumber = whatsapp.replace(/\D/g, '')
+---
+
+<div class="cart" data-cart-root data-wa={waNumber} data-email={email}>
+  <button class="cart__fab" type="button" data-cart-open hidden>
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4h2.6l2.3 10.4a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20.5 8H6"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg>
+    <span data-lang-block="en">Cart</span><span data-lang-block="es">Carrito</span>
+    <span class="cart__count" data-cart-count>0</span>
+  </button>
+
+  <dialog class="cart__panel" data-cart-panel aria-labelledby="cart-title">
+    <header class="cart__head">
+      <h2 class="cart__title" id="cart-title">
+        <span data-lang-block="en">Your selection</span
+        ><span data-lang-block="es">Tu selección</span>
+      </h2>
+      <button class="cart__close" type="button" data-cart-close aria-label="Cerrar carrito">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </header>
+
+    <p class="cart__total" data-cart-total hidden>
+      <span>Total</span>
+      <span>
+        <strong data-cart-total-num>0</strong>
+        <span data-lang-block="en" data-cart-total-en>photos</span
+        ><span data-lang-block="es" data-cart-total-es>fotos</span>
+      </span>
+    </p>
+
+    <ul class="cart__list" data-cart-list></ul>
+    <p class="cart__empty" data-cart-empty>
+      <span data-lang-block="en">No photos yet. Open a photo and add it to the cart.</span
+      ><span data-lang-block="es">Todavía no elegiste fotos. Abrí una y agregala al carrito.</span>
+    </p>
+
+    <footer class="cart__foot">
+      <a class="cart__send" data-cart-send target="_blank" rel="noopener noreferrer">
+        <span data-lang-block="en">Send order via WhatsApp →</span
+        ><span data-lang-block="es">Enviar pedido por WhatsApp →</span>
+      </a>
+      <p class="cart__note">
+        <span data-lang-block="en"
+          >Photos are delivered within 24 hours of receiving the bank transfer
+          receipt.</span
+        ><span data-lang-block="es"
+          >Las fotos serán entregadas dentro de las 24 hs luego de recibido el
+          comprobante de transferencia.</span
+        >
+      </p>
+    </footer>
+  </dialog>
+</div>
+
+<style>
+  .cart__fab {
+    position: fixed;
+    right: clamp(0.75rem, 3vw, 2rem);
+    bottom: clamp(0.75rem, 3vw, 2rem);
+    /* Above the viewer (z 300), so the running count stays visible while
+       browsing and the cart can be opened without leaving the photo. */
+    z-index: 310;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 2.9rem;
+    padding: 0 1.1rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #f4efe7;
+    background: var(--accent);
+    border-radius: 999px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    transition: background 0.25s var(--ease);
+  }
+  .cart__fab[hidden] {
+    display: none;
+  }
+  .cart__fab:hover,
+  .cart__fab:focus-visible {
+    background: var(--accent-bright);
+  }
+  .cart__count {
+    display: grid;
+    place-items: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0 0.35rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--accent);
+    background: #f4efe7;
+    border-radius: 999px;
+  }
+
+  .cart__panel {
+    width: min(26rem, 100vw);
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0 0 0 auto;
+    padding: 0;
+    display: none;
+    flex-direction: column;
+    color: var(--text);
+    background: var(--bg);
+    border: 0;
+    border-left: 1px solid var(--line);
+  }
+  .cart__panel[open] {
+    display: flex;
+  }
+  .cart__panel::backdrop {
+    background: rgba(12, 12, 14, 0.6);
+    backdrop-filter: blur(3px);
+  }
+
+  .cart__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.2rem 1.2rem 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .cart__title {
+    font-size: var(--step-1);
+    font-weight: 400;
+  }
+  .cart__close {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    color: var(--text-dim);
+    border-radius: 50%;
+    transition: color 0.25s var(--ease);
+  }
+  .cart__close:hover {
+    color: var(--accent);
+  }
+
+  .cart__total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1.2rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--line);
+  }
+  .cart__total[hidden] {
+    display: none;
+  }
+  .cart__total strong {
+    font-size: var(--step-1);
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--accent);
+  }
+
+  .cart__list {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0.8rem 1.2rem;
+    list-style: none;
+  }
+  .cart__list:empty {
+    display: none;
+  }
+  .cart__list :global(li) {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.5rem 0;
+  }
+  .cart__list :global(li + li) {
+    border-top: 1px solid var(--line);
+  }
+  .cart__list :global(li.cart__group) {
+    padding: 1rem 0 0.3rem;
+    font-size: var(--step--2);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .cart__list :global(li.cart__group:first-child) {
+    padding-top: 0.3rem;
+  }
+  .cart__list :global(img) {
+    width: 4rem;
+    height: 4rem;
+    object-fit: cover;
+    background: var(--surface);
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  .cart__list :global(.cart__code) {
+    flex: 1;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+  }
+  .cart__list :global(.cart__remove) {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--text-dim);
+    border-radius: 50%;
+    transition: color 0.25s var(--ease);
+  }
+  .cart__list :global(.cart__remove:hover) {
+    color: var(--accent);
+  }
+
+  .cart__empty {
+    flex: 1;
+    padding: 1.5rem 1.2rem;
+    font-size: var(--step--1);
+    color: var(--text-dim);
+  }
+  .cart__empty[hidden] {
+    display: none;
+  }
+
+  .cart__foot {
+    padding: 1rem 1.2rem 1.4rem;
+    border-top: 1px solid var(--line);
+  }
+  .cart__send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0 1rem;
+    font-size: var(--step--1);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #f4efe7;
+    background: var(--accent);
+    transition: background 0.25s var(--ease);
+  }
+  .cart__send:hover,
+  .cart__send:focus-visible {
+    background: var(--accent-bright);
+  }
+  .cart__send:not([href]) {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .cart__note {
+    margin-top: 0.9rem;
+    font-size: var(--step--2);
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+</style>
+
+<script>
+  import { getItems, groupByEvent, removeItem, type CartItem } from '../lib/cart'
+
+  function initCart() {
+    const root = document.querySelector<HTMLElement>('[data-cart-root]')
+    if (!root || root.dataset.ready === 'true') return
+    root.dataset.ready = 'true'
+
+    const fab = root.querySelector<HTMLButtonElement>('[data-cart-open]')
+    const countEl = root.querySelector<HTMLElement>('[data-cart-count]')
+    const panel = root.querySelector<HTMLDialogElement>('[data-cart-panel]')
+    const list = root.querySelector<HTMLUListElement>('[data-cart-list]')
+    const empty = root.querySelector<HTMLElement>('[data-cart-empty]')
+    const send = root.querySelector<HTMLAnchorElement>('[data-cart-send]')
+    const total = root.querySelector<HTMLElement>('[data-cart-total]')
+    const totalNum = root.querySelector<HTMLElement>('[data-cart-total-num]')
+    const totalEn = root.querySelector<HTMLElement>('[data-cart-total-en]')
+    const totalEs = root.querySelector<HTMLElement>('[data-cart-total-es]')
+    if (!fab || !countEl || !panel || !list || !empty || !send) return
+
+    const orderLink = (items: CartItem[]) => {
+      const es = document.documentElement.dataset.lang !== 'en'
+      const body = groupByEvent(items)
+        .map((g) => `${g.title}:\n${g.items.map((i) => `• ${i.code}`).join('\n')}`)
+        .join('\n\n')
+      const n = items.length
+      const text = es
+        ? `Hola! Quiero estas fotos:\n\n${body}\n\n(${n} ${n === 1 ? 'foto' : 'fotos'})`
+        : `Hi! I'd like these photos:\n\n${body}\n\n(${n} ${n === 1 ? 'photo' : 'photos'})`
+      const wa = root.dataset.wa
+      if (wa) return `https://wa.me/${wa}?text=${encodeURIComponent(text)}`
+      const subject = es ? 'Pedido de fotos' : 'Photo order'
+      return `mailto:${root.dataset.email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`
+    }
+
+    const itemRow = (item: CartItem) => {
+      const li = document.createElement('li')
+      const img = document.createElement('img')
+      img.src = item.thumb
+      img.alt = item.alt
+      img.draggable = false
+      img.addEventListener('contextmenu', (e) => e.preventDefault())
+      const code = document.createElement('span')
+      code.className = 'cart__code'
+      code.textContent = item.code
+      const remove = document.createElement('button')
+      remove.type = 'button'
+      remove.className = 'cart__remove'
+      remove.setAttribute('aria-label', `Quitar la foto ${item.code}`)
+      remove.innerHTML =
+        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+      remove.addEventListener('click', () => removeItem(item.event, item.code))
+      li.append(img, code, remove)
+      return li
+    }
+
+    const render = () => {
+      const items = getItems()
+      fab.hidden = items.length === 0
+      countEl.textContent = String(items.length)
+      fab.setAttribute('aria-label', `Abrir carrito, ${items.length} fotos`)
+
+      if (total && totalNum && totalEn && totalEs) {
+        total.hidden = items.length === 0
+        totalNum.textContent = String(items.length)
+        totalEn.textContent = items.length === 1 ? 'photo' : 'photos'
+        totalEs.textContent = items.length === 1 ? 'foto' : 'fotos'
+      }
+
+      list.replaceChildren(
+        ...groupByEvent(items).flatMap((g) => {
+          const head = document.createElement('li')
+          head.className = 'cart__group'
+          head.textContent = g.title
+          return [head, ...g.items.map(itemRow)]
+        })
+      )
+      empty.hidden = items.length > 0
+
+      if (items.length) send.href = orderLink(items)
+      else send.removeAttribute('href')
+    }
+
+    fab.addEventListener('click', () => {
+      render()
+      panel.showModal()
+    })
+    root
+      .querySelector('[data-cart-close]')
+      ?.addEventListener('click', () => panel.close())
+    // Click on the backdrop (outside the panel box) closes it.
+    panel.addEventListener('click', (e) => {
+      if (e.target === panel) {
+        const r = panel.getBoundingClientRect()
+        const inside =
+          e.clientX >= r.left && e.clientX <= r.right &&
+          e.clientY >= r.top && e.clientY <= r.bottom
+        if (!inside) panel.close()
+      }
+    })
+
+    // The listener lives on document, which survives client-side navigation;
+    // drop it on swap so the next page does not render into a detached cart.
+    const ac = new AbortController()
+    document.addEventListener('cart:change', render, { signal: ac.signal })
+    document.addEventListener('astro:before-swap', () => ac.abort(), {
+      once: true,
+    })
+
+    render()
+  }
+
+  initCart()
+  document.addEventListener('astro:page-load', initCart)
+</script>

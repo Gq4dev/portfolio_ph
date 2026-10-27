@@ -9,8 +9,10 @@
  *   data-alt       alt text
  *   data-caption   caption line (falls back to alt)
  *   data-capture   secondary meta line (optional)
- *   data-code      photo code, shown next to the order CTA (optional)
- *   data-order     order link — its presence shows the CTA (optional)
+ *   data-code      photo code, shown next to the cart button (optional)
+ *   data-cart      event slug — its presence shows the add-to-cart button
+ *                  (see lib/cart.ts)
+ *   data-event     event title, used to group the cart (with data-cart)
  *   data-protected blocks drag / right-click on the viewer image (optional)
  */
 ---
@@ -34,15 +36,21 @@
       <img class="lightbox__img" id="lightbox-img" src="" alt="" />
       <div class="lightbox__order" id="lightbox-order" hidden>
         <span class="lightbox__code" id="lightbox-code"></span>
-        <a
+        <button
           class="lightbox__cta"
           id="lightbox-cta"
-          target="_blank"
-          rel="noopener noreferrer"
+          type="button"
+          aria-pressed="false"
         >
-          <span data-lang-block="en">Order →</span
-          ><span data-lang-block="es">La quiero →</span>
-        </a>
+          <span class="lightbox__cta-add">
+            <span data-lang-block="en">Add to cart +</span
+            ><span data-lang-block="es">Agregar al carrito +</span>
+          </span>
+          <span class="lightbox__cta-in">
+            <span data-lang-block="en">In cart ✓</span
+            ><span data-lang-block="es">En el carrito ✓</span>
+          </span>
+        </button>
       </div>
     </div>
     <figcaption class="lightbox__caption">
@@ -181,6 +189,13 @@
   .lightbox__cta:focus-visible {
     color: var(--accent-bright);
   }
+  .lightbox__cta[aria-pressed='true'] {
+    color: var(--accent-bright);
+  }
+  .lightbox__cta[aria-pressed='true'] .lightbox__cta-add,
+  .lightbox__cta[aria-pressed='false'] .lightbox__cta-in {
+    display: none;
+  }
 
   .lightbox__close {
     position: absolute;
@@ -247,6 +262,8 @@
 </style>
 
 <script>
+  import { hasItem, toggleItem } from '../lib/cart'
+
   interface Slide {
     full: string
     srcset: string
@@ -255,7 +272,8 @@
     caption: string
     capture: string
     code: string
-    order: string
+    cart: string
+    eventTitle: string
     protectedImage: boolean
     num: string
     trigger: HTMLElement
@@ -263,14 +281,17 @@
 
   function initLightbox() {
     const box = document.getElementById('lightbox')
-    if (!box) return
+    // Runs on load and on astro:page-load; binding twice would make the cart
+    // button add and remove in the same click.
+    if (!box || box.dataset.ready === 'true') return
+    box.dataset.ready = 'true'
 
     const img = document.getElementById('lightbox-img') as HTMLImageElement | null
     const textEl = document.getElementById('lightbox-text')
     const metaEl = document.getElementById('lightbox-meta')
     const orderEl = document.getElementById('lightbox-order')
     const codeEl = document.getElementById('lightbox-code')
-    const ctaEl = document.getElementById('lightbox-cta') as HTMLAnchorElement | null
+    const ctaEl = document.getElementById('lightbox-cta') as HTMLButtonElement | null
     if (!img || !textEl) return
 
     const triggers = Array.from(
@@ -287,7 +308,8 @@
       caption: t.dataset.caption || '',
       capture: t.dataset.capture || '',
       code: t.dataset.code || '',
-      order: t.dataset.order || '',
+      cart: t.dataset.cart || '',
+      eventTitle: t.dataset.event || '',
       protectedImage: t.dataset.protected != null,
       num: String(Number(t.dataset.index) + 1).padStart(2, '0'),
       trigger: t,
@@ -372,6 +394,19 @@
       if (full.complete && full.naturalWidth > 0) showFull()
     }
 
+    // The button reflects the cart, not its own clicks: a photo removed from
+    // the cart panel has to read "Add" again when the viewer comes back to it.
+    const syncCta = () => {
+      const s = slides[current]
+      if (!ctaEl || !s?.cart) return
+      const inCart = hasItem(s.cart, s.code)
+      ctaEl.setAttribute('aria-pressed', String(inCart))
+      ctaEl.setAttribute(
+        'aria-label',
+        inCart ? `Quitar del carrito — foto ${s.code}` : `Agregar al carrito — foto ${s.code}`
+      )
+    }
+
     const render = () => {
       const s = slides[current]
       if (!s) return
@@ -386,16 +421,10 @@
         metaEl.textContent = s.capture
         metaEl.hidden = !s.capture
       }
-      if (orderEl && codeEl && ctaEl) {
-        const hasOrder = Boolean(s.order)
-        orderEl.hidden = !hasOrder
+      if (orderEl && codeEl) {
+        orderEl.hidden = !s.cart
         codeEl.textContent = s.code
-        if (hasOrder) {
-          ctaEl.href = s.order
-          ctaEl.setAttribute('aria-label', `La quiero — foto ${s.code}`)
-        } else {
-          ctaEl.removeAttribute('href')
-        }
+        syncCta()
       }
 
       // Warm both directions: people browse a catalog backwards as often as
@@ -445,6 +474,27 @@
       .querySelector('[data-lightbox-next]')
       ?.addEventListener('click', () => go(1))
 
+    ctaEl?.addEventListener('click', () => {
+      const s = slides[current]
+      if (!s?.cart) return
+      // The grid thumbnail is already downloaded, so it doubles as the cart
+      // miniature at no extra cost.
+      const thumb = s.trigger.querySelector('img')
+      toggleItem({
+        event: s.cart,
+        eventTitle: s.eventTitle,
+        code: s.code,
+        thumb: thumb?.currentSrc || thumb?.src || s.full,
+        alt: s.alt,
+      })
+    })
+
+    const ac = new AbortController()
+    document.addEventListener('cart:change', syncCta, { signal: ac.signal })
+    document.addEventListener('astro:before-swap', () => ac.abort(), {
+      once: true,
+    })
+
     img.addEventListener('contextmenu', (e) => {
       if (slides[current]?.protectedImage) e.preventDefault()
     })
@@ -464,8 +514,7 @@
       } else if (e.key === 'ArrowLeft') {
         go(-1)
       } else if (e.key === 'Tab') {
-        // The order CTA is an anchor, so the trap has to include links — and
-        // skip whatever is hidden on the current slide.
+        // Include links too, and skip whatever is hidden on the current slide.
         const focusables = Array.from(
           box.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]')
         ).filter((el) => el.offsetParent !== null)
