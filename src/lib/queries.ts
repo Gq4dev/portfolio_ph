@@ -173,9 +173,20 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     shortBioEn: raw.shortBioEn || shortBio,
     email: raw.email || DEFAULT_SETTINGS.email,
     whatsapp: raw.whatsapp || DEFAULT_SETTINGS.whatsapp,
-    instagram: raw.instagram || DEFAULT_SETTINGS.instagram,
+    instagram: toInstagramHandle(raw.instagram) || DEFAULT_SETTINGS.instagram,
     featured: (raw.featured ?? []).filter((f) => f?.asset),
   }
+}
+
+// Editors may paste a full profile URL instead of a handle; reduce it to the
+// bare handle so consumers can safely build `https://instagram.com/<handle>`.
+function toInstagramHandle(value?: string): string {
+  if (!value) return ''
+  return value
+    .trim()
+    .replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i, '')
+    .replace(/[/?#].*$/, '')
+    .replace(/^@/, '')
 }
 
 export async function getAbout(): Promise<About | null> {
