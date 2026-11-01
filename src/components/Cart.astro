@@ -286,9 +286,9 @@ const waNumber = whatsapp.replace(/\D/g, '')
     formatPrice,
     getItems,
     groupByEvent,
-    priceAt,
     removeItem,
     totalPrice,
+    unitPrice,
     type CartItem,
   } from '../lib/cart'
 
@@ -312,10 +312,9 @@ const waNumber = whatsapp.replace(/\D/g, '')
 
     const orderLink = (items: CartItem[]) => {
       const es = document.documentElement.dataset.lang !== 'en'
-      const line = (i: CartItem) =>
-        `• ${i.code} — ${formatPrice(priceAt(items.indexOf(i)))}`
+      const unit = formatPrice(unitPrice(items.length))
       const body = groupByEvent(items)
-        .map((g) => `${g.title}:\n${g.items.map(line).join('\n')}`)
+        .map((g) => `${g.title}:\n${g.items.map((i) => `• ${i.code} — ${unit}`).join('\n')}`)
         .join('\n\n')
       const n = items.length
       const sum = formatPrice(totalPrice(items))
@@ -366,15 +365,13 @@ const waNumber = whatsapp.replace(/\D/g, '')
       }
       if (totalPriceEl) totalPriceEl.textContent = formatPrice(totalPrice(items))
 
+      const unit = unitPrice(items.length)
       list.replaceChildren(
         ...groupByEvent(items).flatMap((g) => {
           const head = document.createElement('li')
           head.className = 'cart__group'
           head.textContent = g.title
-          return [
-            head,
-            ...g.items.map((i) => itemRow(i, priceAt(items.indexOf(i)))),
-          ]
+          return [head, ...g.items.map((i) => itemRow(i, unit))]
         })
       )
       empty.hidden = items.length > 0

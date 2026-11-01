@@ -76,28 +76,26 @@ export function toggleItem(item: CartItem): boolean {
 
 /** Price of the first photo, in ARS. */
 const BASE_PRICE = 10000
-/** Each extra photo costs this much less than the one before it. */
-const STEP_DISCOUNT = 0.05
-/** Prices round to this many pesos so they read as real prices. */
-const PRICE_ROUNDING = 100
+/** Percent off the whole order, indexed by photo count; the last is the cap. */
+const DISCOUNTS = [0, 0, 10, 15, 20, 25]
 
 /**
- * Price of the photo at this position in the cart (0 is the first). It depends
- * on the position alone and is never stored, so removing a photo reprices the
- * ones after it.
+ * Price of each photo in an order of this size. The discount covers the whole
+ * order, so every photo costs the same and adding or removing one reprices
+ * them all. It is never stored.
  */
-export function priceAt(position: number): number {
-  const price = BASE_PRICE * (1 - STEP_DISCOUNT) ** position
-  return Math.round(price / PRICE_ROUNDING) * PRICE_ROUNDING
+export function unitPrice(count: number): number {
+  const discount = DISCOUNTS[Math.min(count, DISCOUNTS.length - 1)]
+  return (BASE_PRICE * (100 - discount)) / 100
 }
 
-/** What the next photo added to the cart would cost. */
+/** What each photo would cost once one more is added to the cart. */
 export function nextPrice(): number {
-  return priceAt(getItems().length)
+  return unitPrice(getItems().length + 1)
 }
 
 export function totalPrice(items: CartItem[]): number {
-  return items.reduce((sum, _, position) => sum + priceAt(position), 0)
+  return items.length * unitPrice(items.length)
 }
 
 export function formatPrice(price: number): string {
