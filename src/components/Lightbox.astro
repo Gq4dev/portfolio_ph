@@ -45,6 +45,7 @@
           <span class="lightbox__cta-add">
             <span data-lang-block="en">Add to cart +</span
             ><span data-lang-block="es">Agregar al carrito +</span>
+            <span id="lightbox-price"></span>
           </span>
           <span class="lightbox__cta-in">
             <span data-lang-block="en">In cart ✓</span
@@ -262,7 +263,7 @@
 </style>
 
 <script>
-  import { hasItem, toggleItem } from '../lib/cart'
+  import { formatPrice, hasItem, nextPrice, toggleItem } from '../lib/cart'
 
   interface Slide {
     full: string
@@ -292,6 +293,7 @@
     const orderEl = document.getElementById('lightbox-order')
     const codeEl = document.getElementById('lightbox-code')
     const ctaEl = document.getElementById('lightbox-cta') as HTMLButtonElement | null
+    const priceEl = document.getElementById('lightbox-price')
     if (!img || !textEl) return
 
     const triggers = Array.from(
@@ -400,10 +402,14 @@
       const s = slides[current]
       if (!ctaEl || !s?.cart) return
       const inCart = hasItem(s.cart, s.code)
+      const price = formatPrice(nextPrice())
+      if (priceEl) priceEl.textContent = price
       ctaEl.setAttribute('aria-pressed', String(inCart))
       ctaEl.setAttribute(
         'aria-label',
-        inCart ? `Quitar del carrito — foto ${s.code}` : `Agregar al carrito — foto ${s.code}`
+        inCart
+          ? `Quitar del carrito — foto ${s.code}`
+          : `Agregar al carrito — foto ${s.code}, ${price}`
       )
     }
 

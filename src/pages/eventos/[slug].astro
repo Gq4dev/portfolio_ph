@@ -130,6 +130,7 @@ const description = metaDescription(
               />
             </button>
             <span class="lot__code" aria-hidden="true">{it.code}</span>
+            <span class="lot__price" data-lot-price aria-hidden="true"></span>
             <button
               class="lot__pick"
               type="button"
@@ -381,6 +382,38 @@ const description = metaDescription(
     }
   }
 
+  /* What this photo would cost as the next pick, so the discount is visible
+     while choosing. Unlike the code it stays on phones, where the price is
+     the one thing worth reading on a tile. Picked tiles drop it: their price
+     lives in the cart. */
+  .lot__price {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+    padding: 1.1rem 0.55rem 0.4rem 0.6rem;
+    font-size: var(--step--2);
+    font-weight: 500;
+    color: #f4efe7;
+    background: linear-gradient(
+      to top left,
+      rgba(10, 10, 12, 0.8),
+      rgba(10, 10, 12, 0)
+    );
+  }
+  .lot.is-picked .lot__price {
+    display: none;
+  }
+  /* In this band the code chip is on and portrait tiles get too narrow for
+     both on one line, so the price stacks above the code. */
+  @media (min-width: 640px) and (max-width: 999px) {
+    .lot__price {
+      bottom: 1.4rem;
+      padding-bottom: 0.1rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .lot :global(.lot__img) {
       transition: none;
@@ -389,7 +422,7 @@ const description = metaDescription(
 </style>
 
 <script>
-  import { getItems, hasItem, toggleItem } from '../../lib/cart'
+  import { formatPrice, getItems, hasItem, nextPrice, toggleItem } from '../../lib/cart'
 
   // Right-click "Save image as" is the laziest grab. Blocking it is a speed
   // bump, nothing more; the watermark is the real defense.
@@ -418,6 +451,12 @@ const description = metaDescription(
       document
         .querySelector('.catalog')
         ?.classList.toggle('has-picks', getItems().length > 0)
+      const price = formatPrice(nextPrice())
+      document
+        .querySelectorAll<HTMLElement>('[data-lot-price]')
+        .forEach((el) => {
+          el.textContent = price
+        })
       document
         .querySelectorAll<HTMLButtonElement>('[data-cart-pick]')
         .forEach((b) => {

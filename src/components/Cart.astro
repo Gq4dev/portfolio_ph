@@ -40,6 +40,7 @@ const waNumber = whatsapp.replace(/\D/g, '')
         <strong data-cart-total-num>0</strong>
         <span data-lang-block="en" data-cart-total-en>photos</span
         ><span data-lang-block="es" data-cart-total-es>fotos</span>
+        · <strong data-cart-total-price></strong>
       </span>
     </p>
 
@@ -220,6 +221,10 @@ const waNumber = whatsapp.replace(/\D/g, '')
     font-weight: 500;
     letter-spacing: 0.12em;
   }
+  .cart__list :global(.cart__price) {
+    font-size: var(--step--1);
+    color: var(--text-dim);
+  }
   .cart__list :global(.cart__remove) {
     display: grid;
     place-items: center;
@@ -277,7 +282,15 @@ const waNumber = whatsapp.replace(/\D/g, '')
 </style>
 
 <script>
-  import { getItems, groupByEvent, removeItem, type CartItem } from '../lib/cart'
+  import {
+    formatPrice,
+    getItems,
+    groupByEvent,
+    priceAt,
+    removeItem,
+    totalPrice,
+    type CartItem,
+  } from '../lib/cart'
 
   function initCart() {
     const root = document.querySelector<HTMLElement>('[data-cart-root]')
@@ -294,24 +307,28 @@ const waNumber = whatsapp.replace(/\D/g, '')
     const totalNum = root.querySelector<HTMLElement>('[data-cart-total-num]')
     const totalEn = root.querySelector<HTMLElement>('[data-cart-total-en]')
     const totalEs = root.querySelector<HTMLElement>('[data-cart-total-es]')
+    const totalPriceEl = root.querySelector<HTMLElement>('[data-cart-total-price]')
     if (!fab || !countEl || !panel || !list || !empty || !send) return
 
     const orderLink = (items: CartItem[]) => {
       const es = document.documentElement.dataset.lang !== 'en'
+      const line = (i: CartItem) =>
+        `• ${i.code} — ${formatPrice(priceAt(items.indexOf(i)))}`
       const body = groupByEvent(items)
-        .map((g) => `${g.title}:\n${g.items.map((i) => `• ${i.code}`).join('\n')}`)
+        .map((g) => `${g.title}:\n${g.items.map(line).join('\n')}`)
         .join('\n\n')
       const n = items.length
+      const sum = formatPrice(totalPrice(items))
       const text = es
-        ? `Hola! Quiero estas fotos:\n\n${body}\n\n(${n} ${n === 1 ? 'foto' : 'fotos'})`
-        : `Hi! I'd like these photos:\n\n${body}\n\n(${n} ${n === 1 ? 'photo' : 'photos'})`
+        ? `Hola! Quiero estas fotos:\n\n${body}\n\n(${n} ${n === 1 ? 'foto' : 'fotos'} — ${sum})`
+        : `Hi! I'd like these photos:\n\n${body}\n\n(${n} ${n === 1 ? 'photo' : 'photos'} — ${sum})`
       const wa = root.dataset.wa
       if (wa) return `https://wa.me/${wa}?text=${encodeURIComponent(text)}`
       const subject = es ? 'Pedido de fotos' : 'Photo order'
       return `mailto:${root.dataset.email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`
     }
 
-    const itemRow = (item: CartItem) => {
+    const itemRow = (item: CartItem, price: number) => {
       const li = document.createElement('li')
       const img = document.createElement('img')
       img.src = item.thumb
@@ -321,6 +338,9 @@ const waNumber = whatsapp.replace(/\D/g, '')
       const code = document.createElement('span')
       code.className = 'cart__code'
       code.textContent = item.code
+      const priceEl = document.createElement('span')
+      priceEl.className = 'cart__price'
+      priceEl.textContent = formatPrice(price)
       const remove = document.createElement('button')
       remove.type = 'button'
       remove.className = 'cart__remove'
@@ -328,7 +348,7 @@ const waNumber = whatsapp.replace(/\D/g, '')
       remove.innerHTML =
         '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 6l12 12M18 6L6 18"/></svg>'
       remove.addEventListener('click', () => removeItem(item.event, item.code))
-      li.append(img, code, remove)
+      li.append(img, code, priceEl, remove)
       return li
     }
 
@@ -344,13 +364,17 @@ const waNumber = whatsapp.replace(/\D/g, '')
         totalEn.textContent = items.length === 1 ? 'photo' : 'photos'
         totalEs.textContent = items.length === 1 ? 'foto' : 'fotos'
       }
+      if (totalPriceEl) totalPriceEl.textContent = formatPrice(totalPrice(items))
 
       list.replaceChildren(
         ...groupByEvent(items).flatMap((g) => {
           const head = document.createElement('li')
           head.className = 'cart__group'
           head.textContent = g.title
-          return [head, ...g.items.map(itemRow)]
+          return [
+            head,
+            ...g.items.map((i) => itemRow(i, priceAt(items.indexOf(i)))),
+          ]
         })
       )
       empty.hidden = items.length > 0

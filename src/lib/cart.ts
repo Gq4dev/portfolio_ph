@@ -74,6 +74,36 @@ export function toggleItem(item: CartItem): boolean {
   return true
 }
 
+/** Price of the first photo, in ARS. */
+const BASE_PRICE = 10000
+/** Each extra photo costs this much less than the one before it. */
+const STEP_DISCOUNT = 0.05
+/** Prices round to this many pesos so they read as real prices. */
+const PRICE_ROUNDING = 100
+
+/**
+ * Price of the photo at this position in the cart (0 is the first). It depends
+ * on the position alone and is never stored, so removing a photo reprices the
+ * ones after it.
+ */
+export function priceAt(position: number): number {
+  const price = BASE_PRICE * (1 - STEP_DISCOUNT) ** position
+  return Math.round(price / PRICE_ROUNDING) * PRICE_ROUNDING
+}
+
+/** What the next photo added to the cart would cost. */
+export function nextPrice(): number {
+  return priceAt(getItems().length)
+}
+
+export function totalPrice(items: CartItem[]): number {
+  return items.reduce((sum, _, position) => sum + priceAt(position), 0)
+}
+
+export function formatPrice(price: number): string {
+  return `$${price.toLocaleString('es-AR')}`
+}
+
 /** Items grouped by event, in the order each event was first added. */
 export function groupByEvent(items: CartItem[]) {
   const groups = new Map<string, { title: string; items: CartItem[] }>()
