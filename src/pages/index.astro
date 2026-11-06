@@ -28,9 +28,6 @@ const seriesSpan = (i: number): 1 | 2 | 3 => {
 const heroIntroEn =
   settings.shortBioEn ||
   'Photography that chases honest light — portraits, landscape, and the wildlife that shows up when you stay still.'
-const heroIntroEs =
-  settings.shortBio ||
-  'Fotografía que persigue la luz honesta — retratos, paisaje y la vida silvestre que aparece cuando una se queda quieta.'
 
 // Hero image (LCP): featured[0] → else first category cover/photo.
 const heroImage = settings.featured[0] ?? categories[0]?.cover ?? null
@@ -41,8 +38,8 @@ const heroAlt =
 
 // Shared hero image config — used by both the preload link and OptimizedImage
 // so the preloaded URL matches what the <img> requests (same cache entry).
-const HERO_SIZES = '(max-width: 900px) 90vw, 46vw'
-const HERO_WIDTHS = [600, 900, 1200, 1600, 2000]
+const HERO_SIZES = '100vw'
+const HERO_WIDTHS = [600, 900, 1200, 1600, 2000, 2560]
 const heroSrcset = heroImage
   ? HERO_WIDTHS.map(
       (w) => `${urlFor(heroImage).width(w).auto('format').quality(80).url()} ${w}w`
@@ -64,49 +61,13 @@ const description = metaDescription(
   preloadSrcset={heroSrcset}
   preloadSizes={HERO_SIZES}
 >
-  <section class="hero wrap" aria-labelledby="hero-name">
-    <div class="hero__lead">
-      <p class="eyebrow" data-reveal style="--reveal-delay:0.05s">
-        <span data-lang-block="en">{settings.taglineEn} · Portfolio</span
-        ><span data-lang-block="es">{settings.tagline} · Portfolio</span>
-      </p>
-      <h1 class="hero__name" id="hero-name">
-        <span class="hero__line" data-reveal style="--reveal-delay:0.12s"
-          >{firstName}</span
-        >
-        {
-          lastName && (
-            <span
-              class="hero__line hero__line--accent"
-              data-reveal
-              style="--reveal-delay:0.22s"
-            >
-              {lastName}
-            </span>
-          )
-        }
-      </h1>
-      <p class="hero__intro" data-reveal style="--reveal-delay:0.34s">
-        <span data-lang-block="en">{heroIntroEn}</span
-        ><span data-lang-block="es">{heroIntroEs}</span>
-      </p>
-      <a
-        class="hero__cue"
-        href="#series"
-        data-reveal
-        style="--reveal-delay:0.44s"
-      >
-        <span>
-          <span data-lang-block="en">View the series</span
-          ><span data-lang-block="es">Ver las series</span>
-        </span>
-        <span class="hero__cue-line" aria-hidden="true"></span>
-      </a>
-    </div>
-
+  <section
+    class:list={['hero', { 'hero--has-image': heroImage }]}
+    aria-labelledby="hero-name"
+  >
     {
       heroImage && (
-        <div class="hero__media" data-reveal style="--reveal-delay:0.18s">
+        <div class="hero__media" data-reveal style="--reveal-delay:0.05s">
           <OptimizedImage
             image={heroImage}
             alt={heroAlt}
@@ -118,6 +79,18 @@ const description = metaDescription(
         </div>
       )
     }
+    <h1 class="hero__name" id="hero-name">
+      <span class="hero__line" data-reveal style="--reveal-delay:0.12s"
+        >{firstName}</span
+      >
+      {
+        lastName && (
+          <span class="hero__line" data-reveal style="--reveal-delay:0.22s">
+            {lastName}
+          </span>
+        )
+      }
+    </h1>
   </section>
 
   <section class="series wrap" id="series" aria-labelledby="series-title">
@@ -151,86 +124,58 @@ const description = metaDescription(
 </Layout>
 
 <style>
-  /* ---------------- Hero: asymmetric, off-grid ---------------- */
+  /* ---------------- Hero: name centered over a full-bleed image ---------------- */
   .hero {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: clamp(2rem, 5vw, 3rem);
-    align-items: end;
-    padding-top: clamp(2.5rem, 7vw, 6rem);
-    padding-bottom: clamp(3rem, 8vw, 7rem);
-  }
-  @media (min-width: 900px) {
-    .hero {
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: clamp(2rem, 4vw, 4rem);
-    }
+    position: relative;
+    margin-bottom: clamp(3rem, 8vw, 7rem);
   }
 
   .hero__name {
-    font-size: var(--step-7);
-    /* Playfair's thinnest weight is 400 and its metrics run taller with
-       higher stroke contrast than Fraunces — give the stacked name a hair
-       more line-height and relax the negative tracking so it sits well. */
+    font-family: 'Times New Roman', Times, serif;
+    /* 108px, scaled down on narrow screens so "Mariana" never overflows. */
+    font-size: min(108px, 24vw);
     font-weight: 400;
-    line-height: 0.94;
-    letter-spacing: -0.015em;
-    margin: 0.4em 0 0.35em;
+    line-height: 0.8;
+    letter-spacing: -0.05em;
+    text-align: center;
+    margin: 0;
+    padding: clamp(2.5rem, 7vw, 6rem) 1rem;
   }
   .hero__line {
     display: block;
   }
-  /* Off-grid nudge on the second line — editorial asymmetry. */
-  .hero__line--accent {
-    margin-left: clamp(0.5rem, 6vw, 3.5rem);
-    font-style: italic;
-    font-weight: 300;
-    color: var(--accent);
-  }
-  .hero__intro {
-    max-width: 40ch;
-    font-size: var(--step-1);
-    color: var(--text-dim);
-    line-height: 1.5;
-  }
 
-  .hero__cue {
-    display: inline-flex;
-    align-items: center;
-    gap: 1rem;
-    margin-top: clamp(1.5rem, 4vw, 2.5rem);
-    font-size: var(--step--1);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--text);
-  }
-  .hero__cue-line {
-    display: block;
-    width: clamp(2.5rem, 8vw, 5rem);
-    height: 1px;
-    background: var(--accent);
-    transform-origin: left;
-    transition: transform 0.4s var(--ease);
-  }
-  .hero__cue:hover .hero__cue-line {
-    transform: scaleX(1.5);
+  /* With a cover image the name sits on top of it, centered near the top. */
+  .hero--has-image .hero__name {
+    position: absolute;
+    inset: 0 0 auto;
+    padding-top: clamp(2rem, 6vw, 5rem);
+    color: #fff;
+    text-shadow: 0 2px 24px rgb(0 0 0 / 0.45);
+    pointer-events: none;
   }
 
   .hero__media {
     position: relative;
-    align-self: stretch;
+    width: 100%;
+  }
+  /* Darken the top band so the name stays legible on light photos. */
+  .hero__media::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 50%;
+    background: linear-gradient(rgb(0 0 0 / 0.35), transparent);
+    pointer-events: none;
   }
   .hero :global(.hero__img) {
+    width: 100%;
     aspect-ratio: 4 / 5;
-    height: 100%;
   }
   @media (min-width: 900px) {
-    .hero__media {
-      /* pull the image up so it overlaps the name's baseline band */
-      margin-top: clamp(-6rem, -4vw, -1rem);
-    }
     .hero :global(.hero__img) {
-      aspect-ratio: 3 / 4;
+      aspect-ratio: auto;
+      height: 100vh;
     }
   }
   /* ---------------- Series ---------------- */
